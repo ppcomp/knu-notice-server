@@ -1,1 +1,7 @@
-knu-notice-server
+# knu-notice-server
+
+```
+Python
+Django
+VisualStudioCode
+```
