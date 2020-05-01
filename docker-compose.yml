@@ -1,0 +1,65 @@
+version: '3'
+    
+services:
+    nginx:
+        image: nginx:1.17.10
+        container_name: nginx01
+        ports:
+            - "8999:8000"
+        volumes:
+            - ./knu_notice:/knu_notice
+            - ./config/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - web
+
+    web:
+        build: .
+        container_name: web01
+        command: bash -c "
+            python manage.py collectstatic --no-input &&
+            python3 manage.py makemigrations && 
+            python manage.py migrate &&
+            gunicorn knu_notice.wsgi -b 0:8000"
+        depends_on:
+            - db
+        volumes:
+            - ./knu_notice:/src
+            - /static:/static
+        expose:
+            - "8000"
+        links:
+            - redis
+
+    celery:
+        build: .
+        container_name: celery01
+        command: celery worker --app=crawling.tasks --loglevel=INFO
+        volumes:
+            - ./knu_notice:/src
+        depends_on:
+            - db
+            - redis
+
+    celery-beat:
+        build: .
+        container_name: celery-beat01
+        command: celery beat --app=crawling.tasks --loglevel=INFO
+        volumes:
+            - ./knu_notice:/src
+        depends_on:
+            - db
+            - redis
+
+    db:
+        image: postgres:12.2
+        container_name: db01
+        environment:
+            - POSTGRES_DB=db
+            - POSTGRES_USER=admin
+            - POSTGRES_PASSWORD=admin
+
+    redis:
+        image: redis:6.0-rc4
+        container_name: redis01
+        ports:
+            - "6379:6379"
