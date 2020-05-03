@@ -4,6 +4,8 @@
 ### custome files ###
 **/migrations/**
 !__init__.py
+.static_root/
+secret.json
 
 ### Django ###
 *.log
