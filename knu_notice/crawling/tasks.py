@@ -8,7 +8,6 @@ from knu_notice.celery import app
 
 logger = logging.getLogger("celery")
 
-
 @app.task
 def show_hello_world():
     logger.info("-"*25)
