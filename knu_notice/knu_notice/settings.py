@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     
     'rest_framework',
     'celery',
-    'crawler',
+
     'crawling',
 ]
 
@@ -134,7 +134,7 @@ CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_BEAT_SCHEDULE = {
     'hello': {
-        'task': 'crawling.tasks.show_hello_world',
+        'task': 'crawling.tasks.crawling',
         'schedule': crontab()  # execute every minute
     }
 }
