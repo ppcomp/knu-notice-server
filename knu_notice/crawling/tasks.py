@@ -1,10 +1,10 @@
 from __future__ import absolute_import, unicode_literals
-import logging
+import logging, os
 from celery import Celery
 from celery.schedules import crontab
 from billiard.context import Process
 
-from django.conf import settings
+# from django.conf import settings
 from knu_notice.celery import app
 
 import scrapy
@@ -13,15 +13,14 @@ from scrapy.crawler import CrawlerRunner
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.log import configure_logging
 from .crawler.crawler.spiders.crawl_spider import CrawlSpiderSpider
-from scrapy.utils.project import get_project_settings
-logger = logging.getLogger("celery")
+from scrapy.settings import Settings
 
-from scrapy.utils.project import get_project_settings
+settings = Settings()
+os.environ['SCRAPY_SETTINGS_MODULE'] = 'crawling.crawler.crawler.settings'
+settings_module_path = os.environ['SCRAPY_SETTINGS_MODULE']
+settings.setmodule(settings_module_path, priority='project')
 
 def crawling_start():
-    settings = get_project_settings()
-    settings['FEED_FORMAT'] = 'csv'
-    settings['FEED_URI'] = '1.csv'
     process = CrawlerProcess(settings)
     process.crawl(CrawlSpiderSpider)
     process.start()
