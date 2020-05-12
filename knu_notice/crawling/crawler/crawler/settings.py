@@ -15,8 +15,8 @@ BOT_NAME = 'crawler'
 SPIDER_MODULES = ['crawling.crawler.crawler.spiders']
 NEWSPIDER_MODULE = 'crawling.crawler.crawler.spiders'
 
-FEED_FORMAT = "csv"
-FEED_URI = "naver_news.csv"
+# FEED_FORMAT = "csv"
+# FEED_URI = "naver_news.csv"
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'crawler (+http://www.yourdomain.com)'
@@ -67,9 +67,9 @@ ROBOTSTXT_OBEY = False
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-# ITEM_PIPELINES = {
-#    'crawler.crawler.pipelines.CrawlerPipeline': 300,
-# }
+ITEM_PIPELINES = {
+   'crawling.crawler.crawler.pipelines.CrawlerPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

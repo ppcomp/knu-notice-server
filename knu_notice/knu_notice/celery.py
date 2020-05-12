@@ -4,7 +4,7 @@ from celery import Celery
 from celery.schedules import crontab
 import logging
 
-logger = logging.getLogger("Celery")
+# logger = logging.getLogger("Celery")
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'knu_notice.settings')
 app = Celery('knu_notice')
 app.config_from_object('django.conf:settings', namespace='CELERY')

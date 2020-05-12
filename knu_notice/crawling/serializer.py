@@ -13,3 +13,6 @@ class NoticeSerializer(serializers.ModelSerializer):
             'reference'
         )
         read_only = ('bid')
+    def create(self, validated_data):
+        notice = Notice.objects.create(**validated_data)
+        return notice

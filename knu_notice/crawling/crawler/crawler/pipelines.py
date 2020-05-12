@@ -5,7 +5,16 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
+from crawling.models import *
 
 class CrawlerPipeline:
     def process_item(self, item, spider):
+        cse = Cse(
+            bid = item['bid'],
+            title = item['title'],
+            link = item['link'],
+            date = item['date'],
+            author=item['author'],
+        )
+        cse.save()
         return item
