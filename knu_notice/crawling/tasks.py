@@ -16,8 +16,13 @@ from .crawler.crawler.spiders.crawl_spider import CrawlSpiderSpider
 from scrapy.utils.project import get_project_settings
 logger = logging.getLogger("celery")
 
+from scrapy.utils.project import get_project_settings
+
 def crawling_start():
-    process = CrawlerProcess()
+    settings = get_project_settings()
+    settings['FEED_FORMAT'] = 'csv'
+    settings['FEED_URI'] = '1.csv'
+    process = CrawlerProcess(settings)
     process.crawl(CrawlSpiderSpider)
     process.start()
 
