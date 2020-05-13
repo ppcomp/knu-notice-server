@@ -1,3 +1,5 @@
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'knu_notice.settings')
 from django.db import models
 
 class Notice(models.Model):
@@ -7,6 +9,9 @@ class Notice(models.Model):
     date = models.DateTimeField()
     author = models.CharField(max_length=30)
     reference = models.CharField(max_length=50,null=True)
+
+    def __str__(self):
+        return self.title
 
 class Main(Notice):
     pass
