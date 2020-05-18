@@ -1,39 +1,83 @@
 # -*- coding: utf-8 -*-
 import scrapy
 from scrapy.linkextractors import LinkExtractor
-#from crawler.items import CrawlerItem
 
-class CrawlSpiderSpider(scrapy.Spider):
-    name = 'crawl_spider'
-    #allowed_domains = ['https://cse.kangwon.ac.kr/index.php?mp=5_1_1']
-    start_urls = ['https://cse.kangwon.ac.kr/index.php?mp=5_1_1']
+'''
+1. 각 class 구동시 필요한 import 구문은 class 안에 있어야 함.
+ (scrapy에서 class만 갖고 crawling 하기 때문에 class 밖에 적어 놓으면 인식 불가.)
+2. 비고(reference)가 없는 게시판이라면 xpath를 None으로 지정할 것.
+3. set_args() 함수의 bid 인자는 각 게시판에서 게시물을 구별할때 사용되는 키 값.
+ (ex cse 게시판은 BID 사용, main 게시판은 nttNo 사용)
+'''
 
-    def bid_split(self, x):
-        idx = x.find("BID")+4
-        for i in range(idx, idx+100000):
-            if x[i] == "&":
-                return x[idx:i]
+class DefaultSpider(scrapy.Spider):
+
+    def set_args(self, model, bid, url_xpath, titles_xpath, dates_xpath, authors_xpath, references_xpath):
+        self.model = model
+        self.bid = bid
+        self.url_xpath = url_xpath
+        self.titles_xpath = titles_xpath
+        self.dates_xpath = dates_xpath
+        self.authors_xpath = authors_xpath
+        self.references_xpath = references_xpath
+
+    def bid_split(self, url):
+        idx = url.find(self.bid)+len(self.bid)+1
+        for i in range(idx, len(url)):
+            if url[i] == "&":
+                return url[idx:i]
+        return url[idx:]
 
     def parse(self, response):
-        url_form = LinkExtractor(restrict_xpaths='//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a',attrs='href')
-        url = url_form.extract_links(response)
-        titles = response.xpath('//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a/text()').extract()
-        date = response.xpath('//*[@id="bbsWrap"]/table/tbody/tr/td[4]/text()').extract()
-        author = response.xpath('//*[@id="bbsWrap"]/table/tbody/tr/td[3]/text()').extract()
-
-
-        for item in zip(url, titles, date, author):
-            # data_set = CrawlerItem()
-            # data_set['bid'] = self.bid_split(item[0].strip())
-            # data_set['title'] = item[1].strip()
-            # data_set['link'] = item[0].strip()
-            # data_set['date'] = item[2].strip()
-            # data_set['author'] = item[3].strip()
+        url_form = LinkExtractor(restrict_xpaths=self.url_xpath,attrs='href')
+        urls = url_form.extract_links(response)
+        titles = response.xpath(self.titles_xpath).extract()
+        dates = response.xpath(self.dates_xpath).extract()
+        authors = response.xpath(self.authors_xpath).extract()
+        if self.references_xpath:
+            references = response.xpath(self.references_xpath).extract()
+        else:
+            references = [None for _ in range(len(urls))]
+        for item in zip(urls, titles, dates, authors, references):
             scrapyed_info = {
+                'model' : self.model,
                 'bid' : self.bid_split(item[0].url),
                 'title' : item[1].strip(),
                 'link' : item[0].url,
-                'date' : item[2].strip(),
+                'date' : item[2].strip().replace('.','-'),
                 'author' : item[3].strip(),
+                'reference' : item[4].strip() if item[4] else None, # reference가 있다면 strip()
             }
             yield scrapyed_info
+
+class MainSpider(DefaultSpider):
+    name = 'main_spider'
+    start_urls = ['https://www.kangwon.ac.kr/www/selectBbsNttList.do?bbsNo=37']
+    def __init__(self):
+        from crawling import models
+        super().__init__()
+        super().set_args(
+            model = models.Main,
+            bid = 'nttNo',
+            url_xpath = '//*[@id="board"]/table/tbody/tr/td[3]/a',
+            titles_xpath = '//*[@id="board"]/table/tbody/tr/td[3]/a/text()',
+            dates_xpath = '//*[@id="board"]/table/tbody/tr/td[6]/text()',
+            authors_xpath = '//*[@id="board"]/table/tbody/tr/td[4]/text()',
+            references_xpath = '//*[@id="board"]/table/tbody/tr/td[2]/text()',
+        )
+
+class CseSpider(DefaultSpider):
+    name = 'cse_spider'
+    start_urls = ['https://cse.kangwon.ac.kr/index.php?mp=5_1_1']
+    def __init__(self):
+        from crawling import models
+        super().__init__()
+        super().set_args(
+            model = models.Cse,
+            bid = 'BID',
+            url_xpath = '//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a',
+            titles_xpath = '//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a/text()',
+            dates_xpath = '//*[@id="bbsWrap"]/table/tbody/tr/td[4]/text()',
+            authors_xpath = '//*[@id="bbsWrap"]/table/tbody/tr/td[3]/text()',
+            references_xpath = None,
+        )
