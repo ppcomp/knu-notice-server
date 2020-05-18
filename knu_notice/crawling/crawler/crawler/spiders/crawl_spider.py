@@ -28,25 +28,34 @@ class DefaultSpider(scrapy.Spider):
                 return url[idx:i]
         return url[idx:]
 
+    def remove_null(self, items):
+        ret = []
+        x = ''
+        for item in items:
+            x = item.strip()
+            if x != '':
+                ret.append(x)
+        return ret
+
     def parse(self, response):
         url_form = LinkExtractor(restrict_xpaths=self.url_xpath,attrs='href')
         urls = url_form.extract_links(response)
-        titles = response.xpath(self.titles_xpath).extract()
-        dates = response.xpath(self.dates_xpath).extract()
-        authors = response.xpath(self.authors_xpath).extract()
+        titles = self.remove_null(response.xpath(self.titles_xpath).extract())
+        dates = self.remove_null(response.xpath(self.dates_xpath).extract())
+        authors = self.remove_null(response.xpath(self.authors_xpath).extract())
         if self.references_xpath:
-            references = response.xpath(self.references_xpath).extract()
+            references = self.remove_null(response.xpath(self.references_xpath).extract())
         else:
             references = [None for _ in range(len(urls))]
         for item in zip(urls, titles, dates, authors, references):
             scrapyed_info = {
                 'model' : self.model,
                 'bid' : self.bid_split(item[0].url),
-                'title' : item[1].strip(),
+                'title' : item[1],
                 'link' : item[0].url,
-                'date' : item[2].strip().replace('.','-'),
-                'author' : item[3].strip(),
-                'reference' : item[4].strip() if item[4] else None, # reference가 있다면 strip()
+                'date' : item[2].replace('.','-'),
+                'author' : item[3],
+                'reference' : item[4] if item[4] else None, # reference가 있다면 strip()
             }
             yield scrapyed_info
 
