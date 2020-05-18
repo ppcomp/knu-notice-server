@@ -7,7 +7,7 @@ services:
         ports:
             - "8999:8000"
         volumes:
-            - ./knu_notice:/knu_notice
+            - ./knu_notice:/home/src
             - ./config/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
         depends_on:
             - web
@@ -23,7 +23,7 @@ services:
         depends_on:
             - db
         volumes:
-            - ./knu_notice:/src
+            - ./knu_notice:/home/src
             - /static:/static
         expose:
             - "8000"
@@ -33,9 +33,9 @@ services:
     celery:
         build: .
         container_name: celery01
-        command: celery worker --app=crawling.tasks --loglevel=INFO
+        command: celery worker --app=crawling.tasks --loglevel=INFO --pidfile=
         volumes:
-            - ./knu_notice:/src
+            - ./knu_notice:/home/src
         depends_on:
             - db
             - redis
@@ -43,9 +43,9 @@ services:
     celery-beat:
         build: .
         container_name: celery-beat01
-        command: celery beat --app=crawling.tasks --loglevel=INFO
+        command: celery beat --app=crawling.tasks --loglevel=INFO --pidfile=
         volumes:
-            - ./knu_notice:/src
+            - ./knu_notice:/home/src
         depends_on:
             - db
             - redis
