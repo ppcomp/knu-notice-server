@@ -82,9 +82,9 @@ WSGI_APPLICATION = 'knu_notice.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'db',
-        'USER': 'admin',
-        'PASSWORD': 'admin',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
         'HOST': 'db',
         'PORT': '5432',
     }
