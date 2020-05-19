@@ -7,7 +7,7 @@ services:
         ports:
             - "8999:8000"
         volumes:
-            - ./knu_notice:/knu_notice
+            - ./knu_notice:/home/src
             - ./config/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
         depends_on:
             - web
@@ -17,13 +17,13 @@ services:
         container_name: web01
         command: bash -c "
             python manage.py collectstatic --no-input &&
-            python3 manage.py makemigrations && 
+            python manage.py makemigrations && 
             python manage.py migrate &&
             gunicorn knu_notice.wsgi -b 0:8000"
         depends_on:
             - db
         volumes:
-            - ./knu_notice:/src
+            - ./knu_notice:/home/src
             - /static:/static
         expose:
             - "8000"
@@ -33,9 +33,9 @@ services:
     celery:
         build: .
         container_name: celery01
-        command: celery worker --app=crawling.tasks --loglevel=INFO
+        command: celery worker --app=crawling.tasks --loglevel=INFO --pidfile=
         volumes:
-            - ./knu_notice:/src
+            - ./knu_notice:/home/src
         depends_on:
             - db
             - redis
@@ -43,9 +43,9 @@ services:
     celery-beat:
         build: .
         container_name: celery-beat01
-        command: celery beat --app=crawling.tasks --loglevel=INFO
+        command: celery beat --app=crawling.tasks --loglevel=INFO --pidfile=
         volumes:
-            - ./knu_notice:/src
+            - ./knu_notice:/home/src
         depends_on:
             - db
             - redis
@@ -53,10 +53,12 @@ services:
     db:
         image: postgres:12.2
         container_name: db01
+        ports:
+            - "5432:5432"
         environment:
-            - POSTGRES_DB=db
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=admin
+            POSTGRES_DB: "postgres"
+            POSTGRES_USER: "postgres"
+            POSTGRES_PASSWORD: "postgres"
 
     redis:
         image: redis:6.0-rc4
