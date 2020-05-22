@@ -20,10 +20,11 @@ from . import views
 
 # Create a router and register our viewsets with it.
 router = DefaultRouter()
+router.register(r'all', views.NoticeViewSet)
 router.register(r'main', views.MainViewSet)
 router.register(r'cse', views.CseViewSet)
-router.register('', views.NoticeViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path(r'list', views.get_board_list, name='get_board_list'),
 ]
