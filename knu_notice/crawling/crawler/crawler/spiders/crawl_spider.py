@@ -13,15 +13,14 @@ from scrapy.linkextractors import LinkExtractor
 class DefaultSpider(scrapy.Spider):
 
     # 객체 인스턴스에서 사용되는 변수 등록
-    # params: model, bid, url_xpath, titles_xpath, dates_xpath, authores_xpath, references_xpath
-    def set_args(self, model, bid, url_xpath, titles_xpath, dates_xpath, authors_xpath, references_xpath):
-        self.model = model
-        self.bid = bid
-        self.url_xpath = url_xpath
-        self.titles_xpath = titles_xpath
-        self.dates_xpath = dates_xpath
-        self.authors_xpath = authors_xpath
-        self.references_xpath = references_xpath
+    def set_args(self, args):
+        self.model = args['model']
+        self.bid = args['bid']
+        self.url_xpath = args['url_xpath']
+        self.titles_xpath = args['titles_xpath']
+        self.dates_xpath = args['dates_xpath']
+        self.authors_xpath = args['authors_xpath']
+        self.references_xpath = args['references_xpath']
 
     # 공백 제거. 가장 선행되어야 하는 전처리
     # params: items
@@ -85,33 +84,19 @@ class DefaultSpider(scrapy.Spider):
             yield scrapyed_info
 
 class MainSpider(DefaultSpider):
-    name = 'main_spider'
-    start_urls = ['https://www.kangwon.ac.kr/www/selectBbsNttList.do?bbsNo=37']
     def __init__(self):
-        from crawling import models
+        from crawling.data import data 
+        args = data['main'] # Edit only this when you adding new crawler spider.
+        self.name = args['name']
+        self.start_urls = args['start_urls']
         super().__init__()
-        super().set_args(
-            model = models.Main,
-            bid = 'nttNo',
-            url_xpath = '//*[@id="board"]/table/tbody/tr/td[3]/a',
-            titles_xpath = '//*[@id="board"]/table/tbody/tr/td[3]/a/text()',
-            dates_xpath = '//*[@id="board"]/table/tbody/tr/td[6]/text()',
-            authors_xpath = '//*[@id="board"]/table/tbody/tr/td[4]/text()',
-            references_xpath = '//*[@id="board"]/table/tbody/tr/td[2]/text()',
-        )
+        super().set_args(args)
 
 class CseSpider(DefaultSpider):
-    name = 'cse_spider'
-    start_urls = ['https://cse.kangwon.ac.kr/index.php?mp=5_1_1']
     def __init__(self):
-        from crawling import models
+        from crawling.data import data
+        args = data['cse'] # Edit only this when you adding new crawler spider.
+        self.name = args['name']
+        self.start_urls = args['start_urls']
         super().__init__()
-        super().set_args(
-            model = models.Cse,
-            bid = 'BID',
-            url_xpath = '//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a',
-            titles_xpath = '//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a/text()',
-            dates_xpath = '//*[@id="bbsWrap"]/table/tbody/tr/td[4]/text()',
-            authors_xpath = '//*[@id="bbsWrap"]/table/tbody/tr/td[3]/text()',
-            references_xpath = None,
-        )
+        super().set_args(args)
