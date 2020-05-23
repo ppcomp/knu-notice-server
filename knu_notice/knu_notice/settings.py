@@ -39,9 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    'rest_framework',
+    # third party package
     'celery',
+    'drf_yasg',
+    'rest_framework',
 
+    # app
     'crawling',
 ]
 
@@ -135,6 +138,6 @@ CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_BEAT_SCHEDULE = {
     'hello': {
         'task': 'crawling.tasks.crawling',
-        'schedule': timedelta(seconds=20)
+        'schedule': timedelta(seconds=600)
     }
 }
