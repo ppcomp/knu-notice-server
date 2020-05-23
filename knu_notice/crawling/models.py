@@ -10,6 +10,9 @@ class Notice(models.Model):
     author = models.CharField(max_length=30)
     reference = models.CharField(max_length=50,null=True)
 
+    class Meta:
+          ordering = ['-date']  # 기본 정렬: 시간 내림차순(최신 우선)
+
     def __str__(self):
         return self.title
 
