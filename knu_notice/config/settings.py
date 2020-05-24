@@ -10,8 +10,18 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
-import os, sys
+import os, sys, json
 from celery.schedules import crontab, timedelta
+from django.core.exceptions import ImproperlyConfigured
+
+def get_secret(setting):
+    try:
+        with open('config/secret.json', 'r') as f:
+            secret = json.loads(f.read())
+        return secret[setting]
+    except:
+        error_msg = "Set key '{0}' in secret.json".format(setting)
+        raise ImproperlyConfigured(error_msg)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +31,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'y&dr-e2s-y6g12h+tkd)x42wxm-_26spuv8mu)v-prf-kyc#k-'
+SECRET_KEY = get_secret('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -76,7 +86,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'knu_notice.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
@@ -85,11 +95,11 @@ WSGI_APPLICATION = 'knu_notice.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'db',
-        'PORT': '5432',
+        'NAME': get_secret('DB_NAME'),
+        'USER': get_secret('DB_USER'),
+        'PASSWORD': get_secret('DB_PASSWORD'),
+        'HOST': get_secret('DB_HOST'),
+        'PORT': get_secret('DB_PORT'),
     }
 }
 
@@ -135,9 +145,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, '.static_root')
 
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_SCHEDULE = timedelta(seconds=60)
 CELERY_BEAT_SCHEDULE = {
     'hello': {
         'task': 'crawling.tasks.crawling',
-        'schedule': timedelta(seconds=600)
+        'schedule': CELERY_SCHEDULE
     }
 }

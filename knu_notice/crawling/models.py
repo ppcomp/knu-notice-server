@@ -1,5 +1,4 @@
 import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'knu_notice.settings')
 from django.db import models
 
 class Notice(models.Model):

@@ -19,7 +19,7 @@ services:
             python manage.py collectstatic --no-input &&
             python manage.py makemigrations && 
             python manage.py migrate &&
-            gunicorn knu_notice.wsgi -b 0:8000"
+            gunicorn config.wsgi -b 0:8000"
         depends_on:
             - db
         volumes:

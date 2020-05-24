@@ -5,7 +5,7 @@ from celery.schedules import crontab
 import logging
 
 # logger = logging.getLogger("Celery")
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'knu_notice.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 app = Celery('knu_notice')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
