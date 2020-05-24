@@ -9,7 +9,7 @@ class CrawlerPipeline:
     def process_item(self, item, spider):
         #get_or_create : 매개변수로 들어오는 데이터를 DB에 있는 데이터와 비교해서 데이터를 Get 하거나 Create 함
         notice, created = item['model'].objects.get_or_create(
-            bid = item['bid'],  # bid만 일치하면 기존에 있던 데이터라고 판단함.
+            id = item['id'],  # id만 일치하면 기존에 있던 데이터라고 판단함.
             defaults={
                 'title':item['title'],
                 'link':item['link'],
