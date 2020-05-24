@@ -46,8 +46,8 @@ class DefaultSpider(scrapy.Spider):
             for i in range(idx, len(url)):
                 if url[i] == "&":
                     break
-            bids.append(url[idx:i])
-        return bids, urls
+            ids.append(f'{self.name}-{url[idx:i]}')
+        return ids, urls
 
     # date 형식에 맞게 조정
     # ex 2020.05.19 > 2020-05-19
