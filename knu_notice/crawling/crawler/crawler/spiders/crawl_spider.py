@@ -6,7 +6,7 @@ from scrapy.linkextractors import LinkExtractor
 1. 각 class 구동시 필요한 import 구문은 class 안에 있어야 함.
  (scrapy에서 class만 갖고 crawling 하기 때문에 class 밖에 적어 놓으면 인식 불가.)
 2. 비고(reference)가 없는 게시판이라면 xpath를 None으로 지정할 것.
-3. set_args() 함수의 bid 인자는 각 게시판에서 게시물을 구별할때 사용되는 키 값.
+3. set_args() 함수의 id 인자는 각 게시판에서 게시물을 구별할때 사용되는 키 값.
  (ex cse 게시판은 BID 사용, main 게시판은 nttNo 사용)
 '''
 
@@ -15,7 +15,7 @@ class DefaultSpider(scrapy.Spider):
     # 객체 인스턴스에서 사용되는 변수 등록
     def set_args(self, args):
         self.model = args['model']
-        self.bid = args['bid']
+        self.id = args['id']
         self.url_xpath = args['url_xpath']
         self.titles_xpath = args['titles_xpath']
         self.dates_xpath = args['dates_xpath']
@@ -33,21 +33,21 @@ class DefaultSpider(scrapy.Spider):
                 ret.append(x)
         return ret
 
-    # Link 객체에서 url과 bid 추출
+    # Link 객체에서 url과 id 추출
     # params: links
-    # return: bids, urls
-    def split_bid_and_link(self, links):
+    # return: ids, urls
+    def split_id_and_link(self, links):
         urls = []
-        bids = []
+        ids = []
         for link in links:
             urls.append(link.url+'&')
         for url in urls:
-            idx = url.find(self.bid)+len(self.bid)+1
+            idx = url.find(self.id)+len(self.id)+1
             for i in range(idx, len(url)):
                 if url[i] == "&":
                     break
-            bids.append(url[idx:i])
-        return bids, urls
+            ids.append(f'{self.name}-{url[idx:i]}')
+        return ids, urls
 
     # date 형식에 맞게 조정
     # ex 2020.05.19 > 2020-05-19
@@ -68,13 +68,13 @@ class DefaultSpider(scrapy.Spider):
             references = [None for _ in range(len(links))]
 
         # Data cleansing
-        bids, links = self.split_bid_and_link(links)    # bid, link 추출
+        ids, links = self.split_id_and_link(links)    # id, link 추출
         dates = self.date_cleanse(dates)                # date 형식에 맞게 조정
 
-        for item in zip(bids, titles, links, dates, authors, references):
+        for item in zip(ids, titles, links, dates, authors, references):
             scrapyed_info = {
                 'model' : self.model,
-                'bid' : item[0],
+                'id' : item[0],
                 'title' : item[1],
                 'link' : item[2],
                 'date' : item[3],
