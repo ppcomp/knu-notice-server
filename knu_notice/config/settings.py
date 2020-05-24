@@ -145,10 +145,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, '.static_root')
 
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
-CELERY_SCHEDULE = timedelta(seconds=60)
 CELERY_BEAT_SCHEDULE = {
     'hello': {
         'task': 'crawling.tasks.crawling',
-        'schedule': CELERY_SCHEDULE
+        'schedule': timedelta(seconds=60)
     }
 }
