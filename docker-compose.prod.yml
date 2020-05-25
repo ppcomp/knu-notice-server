@@ -8,7 +8,7 @@ services:
             - "80:8000"
         volumes:
             - ./knu_notice:/home/src
-            - ./config/nginx/dev.conf:/etc/nginx/conf.d/default.conf
+            - ./config/nginx/prod.conf:/etc/nginx/conf.d/default.conf
         depends_on:
             - web
 
@@ -16,10 +16,10 @@ services:
         build: .
         container_name: web01
         command: bash -c "
-            python manage_dev.py collectstatic --no-input &&
-            python manage_dev.py makemigrations && 
-            python manage_dev.py migrate &&
-            gunicorn knu_notice.dev.wsgi -b 0:8000"
+            python manage_prod.py collectstatic --no-input &&
+            python manage_prod.py makemigrations && 
+            python manage_prod.py migrate &&
+            gunicorn knu_notice.prod.wsgi -b 0:8000"
         depends_on:
             - db
         volumes:
@@ -39,7 +39,7 @@ services:
         depends_on:
             - db
             - redis
-        env_file: ./config/celery/dev.conf
+        env_file: ./config/celery/prod.conf
 
     celery-beat:
         build: .
@@ -50,7 +50,7 @@ services:
         depends_on:
             - db
             - redis
-        env_file: ./config/celery/dev.conf
+        env_file: ./config/celery/prod.conf
 
     db:
         image: postgres:12.2

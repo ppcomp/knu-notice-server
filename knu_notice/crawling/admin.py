@@ -1,6 +1,9 @@
 from django.contrib import admin
-from .models import Notice, Main, Cse
+from . import models
 
-admin.site.register(Notice)
-admin.site.register(Main)
-admin.site.register(Cse)
+# models 안에 있는 모델 admin page에 일괄 등록
+models_list = []
+for name, cls in models.__dict__.items():
+    if isinstance(cls, type):
+        models_list.append(cls)
+admin.site.register(models_list)

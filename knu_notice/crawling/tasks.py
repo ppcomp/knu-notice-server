@@ -15,10 +15,10 @@ from scrapy.utils.log import configure_logging
 from .crawler.crawler.spiders import crawl_spider
 from scrapy.settings import Settings
 
-settings = Settings()
+scrapy_settings = Settings()
 os.environ['SCRAPY_SETTINGS_MODULE'] = 'crawling.crawler.crawler.settings'
 settings_module_path = os.environ['SCRAPY_SETTINGS_MODULE']
-settings.setmodule(settings_module_path, priority='project')
+scrapy_settings.setmodule(settings_module_path, priority='project')
 spiders = [
     # crawl_spider에 게시판 크롤링 class 생성 후 이 곳에 추가.
     # 이 곳에 있는 게시판(class)을 대상으로 crawling됨.
@@ -27,7 +27,7 @@ spiders = [
 ]
 
 def crawling_start():
-    process = CrawlerProcess(settings)
+    process = CrawlerProcess(scrapy_settings)
     for spider in spiders:
         process.crawl(spider)
     process.start()

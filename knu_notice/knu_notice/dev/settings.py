@@ -16,7 +16,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 def get_secret(setting):
     try:
-        with open('config/secret.json', 'r') as f:
+        with open('knu_notice/secret.json', 'r') as f:
             secret = json.loads(f.read())
         return secret[setting]
     except:
@@ -86,7 +86,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = 'knu_notice.dev.wsgi.application'
 
 
 # Database
