@@ -5,6 +5,8 @@ djangorestframework==3.11.0
 drf-yasg==1.17.0
 gunicorn==20.0.4
 psycopg2==2.8.5
+pytest-django==3.8.0
+pytest-xdist==1.32.0
 pytz==2019.3
 redis==3.4.1
 sqlparse==0.3.1
