@@ -4,6 +4,7 @@ Django==2.2.10
 djangorestframework==3.11.0
 drf-yasg==1.17.0
 gunicorn==20.0.4
+model_mommy==1.5.1
 psycopg2==2.8.5
 pytest-django==3.8.0
 pytest-xdist==1.32.0
