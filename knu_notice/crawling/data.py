@@ -22,7 +22,40 @@ data = {
         'url_xpath' : '//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a',
         'titles_xpath' : '//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a/text()',
         'dates_xpath' : '//*[@id="bbsWrap"]/table/tbody/tr/td[4]/text()',
+
         'authors_xpath' : '//*[@id="bbsWrap"]/table/tbody/tr/td[3]/text()',
         'references_xpath' : None,
+    },
+    'testboard1' : {
+        'api_url' : '/notice/testboard1',
+        'name' : '테스트학과1',
+    },
+    'testboard2' : {
+        'api_url' : '/notice/testboard2',
+        'name' : '테스트학과2',
+    },
+    'testboard3' : {
+        'api_url' : '/notice/testboard3',
+        'name' : '테스트학과3',
+    },
+    'testboard4' : {
+        'api_url' : '/notice/testboard4',
+        'name' : '테스트학과4',
+    },
+    'testboard5' : {
+        'api_url' : '/notice/testboard5',
+        'name' : '테스트학과5',
+    },
+    'testboard6' : {
+        'api_url' : '/notice/testboard6',
+        'name' : '테스트학과6',
+    },
+    'testboard7' : {
+        'api_url' : '/notice/testboard7',
+        'name' : '테스트학과7',
+    },
+    'testboard8' : {
+        'api_url' : '/notice/testboard8',
+        'name' : '테스트학과8',
     },
 }

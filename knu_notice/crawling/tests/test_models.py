@@ -17,9 +17,9 @@ class TestPoint(TestCase):
             assert model
 
     def test_get_notice_all(self):
-        response = self.client.get('/notice/all/')
+        response = self.client.get('/notice/all')
         assert response.status_code==200
 
     def test_get_notice_all_query(self):
-        response = self.client.get('/notice/all/?board=cse-main')
+        response = self.client.get('/notice/all?board=cse-main')
         assert response.status_code==200

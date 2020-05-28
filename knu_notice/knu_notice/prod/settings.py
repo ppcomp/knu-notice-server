@@ -7,8 +7,8 @@ DEBUG = False
 WSGI_APPLICATION = 'knu_notice.prod.wsgi.application'
 
 CELERY_BEAT_SCHEDULE = {
-    'hello': {
-        'task': 'crawling.tasks.crawling',
-        'schedule': timedelta(seconds=21600)
-    }
+    # 'hello': {
+    #     'task': 'crawling.tasks.crawling',
+    #     'schedule': timedelta(seconds=21600)
+    # }
 }

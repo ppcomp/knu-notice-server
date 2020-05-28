@@ -15,12 +15,16 @@ class NoticeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save()
 
-class MainViewSet(NoticeViewSet):
-    queryset = models.Main.objects.all()
-    
-class CseViewSet(NoticeViewSet):
-    queryset = models.Cse.objects.all()
+# 각 model에 대해 필요한 ViewSet 자동 생성
+for name, cls in models.__dict__.items():
+    if isinstance(cls, type):
+        txt = f"""
+class {name}ViewSet(NoticeViewSet):
+    queryset = models.{name}.objects.all()
+"""
+        exec(compile(txt,"<string>","exec"))
 
+# get_board_all
 @api_view(['GET'])
 def get_board_all(request):
     try:
@@ -40,6 +44,7 @@ def get_board_all(request):
         )
     return Response(serialized.data)
 
+# get_board_list
 @api_view(['GET'])
 def get_board_list(request):
     ret = []

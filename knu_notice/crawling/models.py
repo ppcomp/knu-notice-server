@@ -20,3 +20,10 @@ class Main(Notice):
 
 class Cse(Notice):
     pass
+
+for i in range(1,9):
+    txt = f"""
+class TestBoard{i}(Notice):
+    pass
+"""
+    exec(compile(txt,"<string>","exec"))

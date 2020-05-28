@@ -20,11 +20,17 @@ from . import views
 
 # Create a router and register our viewsets with it.
 router = DefaultRouter()
-router.register(r'main', views.MainViewSet)
-router.register(r'cse', views.CseViewSet)
+# router.register('main', views.MainViewSet)
+# router.register('cse', views.CseViewSet)
+
+# ViewSet에 필요한 url 자동 등록
+for name, cls in views.__dict__.items():
+    idx = name.find('ViewSet')
+    if idx != -1:
+        router.register(name[:idx].lower(), cls)
 
 urlpatterns = [
     path('', include(router.urls)),
     path(r'list/', views.get_board_list, name='get_board_list'),
-    path(r'all/', views.get_board_all, name='get_board_all'),
+    path(r'all', views.get_board_all, name='get_board_all'),
 ]
