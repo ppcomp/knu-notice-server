@@ -1,6 +1,6 @@
 data = {
     'main' : {
-        'api_url' : 'notice/main/',
+        'api_url' : '/notice/main/',
         'name' : '강원대학교',
         'start_urls' : ['https://www.kangwon.ac.kr/www/selectBbsNttList.do?bbsNo=37'],
         'model' : 'Main',
@@ -12,7 +12,7 @@ data = {
         'references_xpath' : '//*[@id="board"]/table/tbody/tr/td[2]/text()',
     },
     'cse' : {
-        'api_url' : 'notice/cse/',
+        'api_url' : '/notice/cse/',
         'name' : '컴퓨터공학과',
         'start_urls' : ['https://cse.kangwon.ac.kr/index.php?mp=5_1_1'],
         'model' : 'Cse',
@@ -27,6 +27,6 @@ data = {
 
 for i in range(1, 21):
     data[f'testboard{i}'] = {
-        'api_url' : f'notice/testboard{i}',
+        'api_url' : f'/notice/testboard{i}',
         'name' : f'테스트학과{i}',
     }
