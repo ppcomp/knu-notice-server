@@ -21,7 +21,7 @@ class Main(Notice):
 class Cse(Notice):
     pass
 
-for i in range(1,9):
+for i in range(1,21):
     txt = f"""
 class TestBoard{i}(Notice):
     pass
