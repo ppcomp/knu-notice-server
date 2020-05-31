@@ -26,7 +26,7 @@ spiders = [
     crawl_spider.CseSpider,
 ]
 
-def crawling_start():
+def crawling_start(scrapy_settings):
     process = CrawlerProcess(scrapy_settings)
     for spider in spiders:
         process.crawl(spider)
@@ -34,6 +34,6 @@ def crawling_start():
 
 @app.task
 def crawling():
-    proc = Process(target=crawling_start)
+    proc = Process(target=crawling_start, args=(scrapy_settings,))
     proc.start()
     proc.join()

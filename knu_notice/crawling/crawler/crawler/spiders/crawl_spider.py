@@ -14,6 +14,8 @@ from crawling.data import data
 
 class DefaultSpider(scrapy.Spider):
 
+    handle_httpstatus_list = [404]
+
     # 객체 인스턴스에서 사용되는 변수 등록
     def set_args(self, args):
         self.model = args['model']
@@ -58,7 +60,10 @@ class DefaultSpider(scrapy.Spider):
     def date_cleanse(self, dates):
         return [date.replace('.','-') for date in dates]
 
+    # Override parse()
     def parse(self, response):
+        if response.status == 404:
+            raise Exception('404 Page not foud')
         url_forms = LinkExtractor(restrict_xpaths=self.url_xpath,attrs='href')
         links = url_forms.extract_links(response)
         titles = self.remove_whitespace(response.xpath(self.titles_xpath).extract())
