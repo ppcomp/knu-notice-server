@@ -2,6 +2,8 @@
 import scrapy
 from scrapy.linkextractors import LinkExtractor
 
+from crawling.data import data
+
 '''
 1. 각 class 구동시 필요한 import 구문은 class 안에 있어야 함.
  (scrapy에서 class만 갖고 crawling 하기 때문에 class 밖에 적어 놓으면 인식 불가.)
@@ -68,7 +70,7 @@ class DefaultSpider(scrapy.Spider):
             references = [None for _ in range(len(links))]
 
         # Data cleansing
-        ids, links = self.split_id_and_link(links)    # id, link 추출
+        ids, links = self.split_id_and_link(links)      # id, link 추출
         dates = self.date_cleanse(dates)                # date 형식에 맞게 조정
 
         for item in zip(ids, titles, links, dates, authors, references):
@@ -83,20 +85,27 @@ class DefaultSpider(scrapy.Spider):
             }
             yield scrapyed_info
 
+'''
 class MainSpider(DefaultSpider):
     def __init__(self):
         from crawling.data import data 
-        args = data['main'] # Edit only this when you adding new crawler spider.
+        args = data['main']
         self.name = args['name']
         self.start_urls = args['start_urls']
         super().__init__()
         super().set_args(args)
-
-class CseSpider(DefaultSpider):
+'''
+# 위와 같은 형식의 Spider Class 자동 생성
+for key, item in data.items():
+    if key.find('test') == -1:
+        txt = f"""
+class {key.capitalize()}Spider(DefaultSpider):
     def __init__(self):
-        from crawling.data import data
-        args = data['cse'] # Edit only this when you adding new crawler spider.
+        from crawling.data import data 
+        args = data['{key}']
         self.name = args['name']
         self.start_urls = args['start_urls']
         super().__init__()
         super().set_args(args)
+"""
+        exec(compile(txt,"<string>","exec"))

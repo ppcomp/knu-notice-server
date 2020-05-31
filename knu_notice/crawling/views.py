@@ -15,7 +15,11 @@ class NoticeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save()
 
-# 각 model에 대해 필요한 ViewSet 자동 생성
+"""
+class MainViewSet(NoticeViewSet):
+    queryset = models.Main.objects.all()
+"""
+# 위와 같이 각 model에 대해 필요한 ViewSet 자동 생성
 for name, cls in models.__dict__.items():
     if isinstance(cls, type):
         txt = f"""

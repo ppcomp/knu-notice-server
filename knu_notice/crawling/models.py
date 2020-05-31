@@ -1,6 +1,8 @@
 import os
 from django.db import models
 
+from crawling.data import data
+
 class Notice(models.Model):
     id = models.CharField(max_length=30, primary_key=True)
     title = models.CharField(max_length=100)
@@ -15,15 +17,14 @@ class Notice(models.Model):
     def __str__(self):
         return self.title
 
+'''
 class Main(Notice):
     pass
-
-class Cse(Notice):
-    pass
-
-for i in range(1,21):
+'''
+# 위와 같은 형식의 모델이 data로부터 자동 생성
+for key, item in data.items():
     txt = f"""
-class TestBoard{i}(Notice):
+class {key.capitalize()}(Notice):
     pass
 """
     exec(compile(txt,"<string>","exec"))
