@@ -32,7 +32,7 @@ services:
     celery:
         build: .
         container_name: celery01
-        command: celery worker --app=crawling.tasks --logfile=crawling.log --loglevel=ERROR --pidfile=
+        command: celery worker --app=crawling.tasks --pidfile=
         volumes:
             - ./knu_notice:/home/src
         depends_on:
@@ -43,7 +43,7 @@ services:
     celery-beat:
         build: .
         container_name: celery-beat01
-        command: celery beat --app=crawling.tasks --logfile=crawling.log --loglevel=ERROR --pidfile=
+        command: celery beat --app=crawling.tasks --pidfile=
         volumes:
             - ./knu_notice:/home/src
         depends_on:

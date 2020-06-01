@@ -9,6 +9,8 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+LOG_LEVEL = 'DEBUG'
+LOG_FILE = 'scrapy.log'
 
 BOT_NAME = 'crawler'
 

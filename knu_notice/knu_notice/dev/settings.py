@@ -151,3 +151,33 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': timedelta(seconds=600)
     }
 }
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': u'[%(levelname)s|%(filename)s:%(lineno)s] %(asctime)s > %(message)s'
+        },
+    },
+    'handlers': {
+        'console_celery': {
+            'level': 'ERROR',
+            'class': 'logging.StreamHandler',
+            'formatter': 'default'
+        },
+        'file_celery': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'celery.log',
+            'formatter': 'default',
+            'maxBytes': 1024 * 1024 * 100,  # 100 mb
+        },
+    },
+    'loggers': {
+        'celery': {
+            'handlers': ['file_celery', 'console_celery'],
+            'level': 'DEBUG',
+        },
+    }
+}
