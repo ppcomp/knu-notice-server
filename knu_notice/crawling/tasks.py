@@ -3,6 +3,7 @@ import logging, os
 from celery import Celery
 from celery.schedules import crontab
 from billiard.context import Process
+from typing import List, Tuple, Dict, TYPE_CHECKING
 
 # from django.conf import settings
 from knu_notice.celery import app
@@ -26,11 +27,21 @@ spiders = [
     crawl_spider.CseSpider,
 ]
 
-def crawling_start(scrapy_settings):
+def crawling_start(scrapy_settings: Settings) -> List[Dict]:
     process = CrawlerProcess(scrapy_settings)
+    crawler_list = []
     for spider in spiders:
-        process.crawl(spider)
+        crawler = process.create_crawler(spider)
+        crawler_list.append(crawler)
+        process.crawl(crawler)
     process.start()
+
+    stats_dic_list = []
+    for crawler in crawler_list:
+        # stats = crawler.stats   # <class 'scrapy.statscollectors.MemoryStatsCollector'>
+        stats = crawler.stats.get_stats()   # <class 'dict'>
+        stats_dic_list.append(stats)
+    return stats_dic_list
 
 @app.task
 def crawling():

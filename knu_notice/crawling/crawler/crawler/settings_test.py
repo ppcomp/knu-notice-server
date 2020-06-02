@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from .settings import *
 
-LOG_LEVEL = 'ERROR'
+LOG_LEVEL = 'DEBUG'
 LOG_FILE = 'scrapy_test.log'
 
 # Configure item pipelines

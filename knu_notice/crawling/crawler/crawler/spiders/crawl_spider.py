@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import scrapy
 from scrapy.linkextractors import LinkExtractor
+from typing import Dict, List, Tuple
 
 from crawling.data import data
 
@@ -16,8 +17,36 @@ class DefaultSpider(scrapy.Spider):
 
     handle_httpstatus_list = [404]
 
+    # 데이터 검증
+    def _data_verification(self, item: Dict[str, List]):
+        from crawling import models
+        when = f'While crawling {self.name}'
+        id_len = len(item['ids'])
+
+        # model check
+        eval(f"models.{item['model']}")
+        if id_len == 0:
+            # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
+            raise Exception(f'{when}, Crawled item is empty! Check the xpaths or base url.')
+        for key, value in item.items():
+            if key != 'model':
+                if len(value) != id_len:
+                    # size check. 크롤링된 데이터들이 길이가 다른 경우
+                    print("#"*80)
+                    print(key)
+                    print(item['links'])
+                    print(item['ids'])
+                    print(item['titles'])
+                    raise Exception(f"{when}, {key} size is not same with id. ({key} size: {len(value)}, id size: {id_len})")
+            if key != 'references':
+                # valid check. 크롤링된 데이터의 유효성 검증.
+                if value[0] is None:
+                    raise Exception(f'{when}, {key} is None.')
+                if value[0] == '':
+                    raise Exception(f'{when}, {key} is empty. ("")')
+
     # 객체 인스턴스에서 사용되는 변수 등록
-    def set_args(self, args):
+    def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
         self.url_xpath = args['url_xpath']
@@ -27,9 +56,7 @@ class DefaultSpider(scrapy.Spider):
         self.references_xpath = args['references_xpath']
 
     # 공백 제거. 가장 선행되어야 하는 전처리
-    # params: items
-    # return: ret
-    def remove_whitespace(self, items):
+    def remove_whitespace(self, items: List[str]) -> List[str]:
         ret = []
         for item in items:
             x = item.strip()
@@ -38,9 +65,7 @@ class DefaultSpider(scrapy.Spider):
         return ret
 
     # Link 객체에서 url과 id 추출
-    # params: links
-    # return: ids, urls
-    def split_id_and_link(self, links):
+    def split_id_and_link(self, links: List[str]) -> Tuple[List[str],List[str]]:
         urls = []
         ids = []
         for link in links:
@@ -55,38 +80,57 @@ class DefaultSpider(scrapy.Spider):
 
     # date 형식에 맞게 조정
     # ex 2020.05.19 > 2020-05-19
-    # params: dates
-    # return: dates
-    def date_cleanse(self, dates):
+    def date_cleanse(self, dates: List[str]) -> List[str]:
         return [date.replace('.','-') for date in dates]
 
     # Override parse()
-    def parse(self, response):
+    def parse(self, response) -> Dict:
         if response.status == 404:
-            raise Exception('404 Page not foud')
-        url_forms = LinkExtractor(restrict_xpaths=self.url_xpath,attrs='href')
-        links = url_forms.extract_links(response)
-        titles = self.remove_whitespace(response.xpath(self.titles_xpath).extract())
-        dates = self.remove_whitespace(response.xpath(self.dates_xpath).extract())
-        authors = self.remove_whitespace(response.xpath(self.authors_xpath).extract())
+            raise Exception('404 Page not foud! Check the base url.')
+
+        url_forms = LinkExtractor(restrict_xpaths=self.url_xpath,attrs='href',unique=False)
+        
+        links: List[str] = url_forms.extract_links(response)
+
+        titles: List[str] = self.remove_whitespace(
+            response.xpath(self.titles_xpath).getall())
+
+        dates: List[str] = self.remove_whitespace(
+            response.xpath(self.dates_xpath).getall())
+
+        authors: List[str] = self.remove_whitespace(
+            response.xpath(self.authors_xpath).getall())
+
         if self.references_xpath:
-            references = self.remove_whitespace(response.xpath(self.references_xpath).extract())
+            references: List[str] = self.remove_whitespace(
+                response.xpath(self.references_xpath).getall())
         else:
-            references = [None for _ in range(len(links))]
+            references: List[None] = [None for _ in range(len(links))]
 
         # Data cleansing
-        ids, links = self.split_id_and_link(links)      # id, link 추출
-        dates = self.date_cleanse(dates)                # date 형식에 맞게 조정
+        ids, links = self.split_id_and_link(links)  # id, link 추출
+        dates = self.date_cleanse(dates)            # date 형식에 맞게 조정
 
-        for item in zip(ids, titles, links, dates, authors, references):
+        self._data_verification({
+            'model':self.model,
+            'ids':ids, 
+            'titles':titles, 
+            'links':links, 
+            'dates':dates, 
+            'authors':authors, 
+            'references':references,
+        })
+
+        for id, title, link, date, author, reference in zip(
+            ids, titles, links, dates, authors, references):
             scrapyed_info = {
                 'model' : self.model,
-                'id' : item[0],
-                'title' : item[1],
-                'link' : item[2],
-                'date' : item[3],
-                'author' : item[4],
-                'reference' : item[5],
+                'id' : id,
+                'title' : title,
+                'link' : link,
+                'date' : date,
+                'author' : author,
+                'reference' : reference,
             }
             yield scrapyed_info
 

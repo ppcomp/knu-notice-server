@@ -15,4 +15,4 @@ class TestModels(TestCase):
         self.scrapy_settings.setmodule(settings_module_path, priority='project')
         
     def test_crawler(self):
-        assert crawling_start(self.scrapy_settings)
+        stats_dic_list: list = crawling_start(self.scrapy_settings)
