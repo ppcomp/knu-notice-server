@@ -5,7 +5,7 @@ RUN mkdir ~/.pip
 COPY config/pip.conf ~/.pip/pip.conf
 RUN mkdir home/src
 RUN mkdir /static
-ADD requirements.txt /home/requirements.txt
+ADD config/requirements.txt /home/requirements.txt
 RUN pip install -r /home/requirements.txt
 WORKDIR /home/src
 ADD . /home/src
