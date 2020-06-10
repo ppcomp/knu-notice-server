@@ -35,7 +35,7 @@ def get_board_all(request):
         board_list = request.query_params.get('board').split("-")
         objs = []
         for board in board_list:
-            objs.append(data[board]['model'].objects.all())
+            objs.append(eval(f"models.{data[board]['model']}.objects.all()"))
         ret = sorted(
             list(chain(*objs)),
             key=attrgetter('date')
