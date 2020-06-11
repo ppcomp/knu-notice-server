@@ -25,5 +25,5 @@ class CrawlerPipeline:
         #created = True: DB에 저장된 같은 데이터가 없음 (Create)
         #created = False: DB에 저장된 같은 데이터가 있음 (Get)
         if created:
-            print("new Data insert!")
+            print(f"new Data insert! {item['model']}:{item['title']}")
         return item

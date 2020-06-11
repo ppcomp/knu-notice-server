@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from scrapy.linkextractors import LinkExtractor
 from typing import Dict, List, Tuple
 
 from crawling.data import data
+from .LinkExtractor import MyLinkExtractor
 
 '''
 1. 각 class 구동시 필요한 import 구문은 class 안에 있어야 함.
@@ -32,11 +32,6 @@ class DefaultSpider(scrapy.Spider):
             if key != 'model':
                 if len(value) != id_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
-                    print("#"*80)
-                    print(key)
-                    print(item['links'])
-                    print(item['ids'])
-                    print(item['titles'])
                     raise Exception(f"{when}, {key} size is not same with id. ({key} size: {len(value)}, id size: {id_len})")
             if key != 'references':
                 # valid check. 크롤링된 데이터의 유효성 검증.
@@ -88,9 +83,9 @@ class DefaultSpider(scrapy.Spider):
         if response.status == 404:
             raise Exception('404 Page not foud! Check the base url.')
 
-        url_forms = LinkExtractor(restrict_xpaths=self.url_xpath,attrs='href',unique=False)
+        url_forms = MyLinkExtractor(restrict_xpaths=self.url_xpath, attrs='href')
         
-        links: List[str] = url_forms.extract_links(response)
+        links: List[str] = url_forms.extract_links(response, omit=False)
 
         titles: List[str] = self.remove_whitespace(
             response.xpath(self.titles_xpath).getall())
