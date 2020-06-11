@@ -25,7 +25,6 @@ services:
             - db
         volumes:
             - ./knu_notice:/home/src
-            - /static:/static
         links:
             - redis
 
