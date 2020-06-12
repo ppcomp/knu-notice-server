@@ -13,24 +13,12 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path, re_path, include
 
 from . import views
 
-# Create a router and register our viewsets with it.
-router = DefaultRouter()
-# router.register('main', views.MainViewSet)
-# router.register('cse', views.CseViewSet)
-
-# ViewSet에 필요한 url 자동 등록
-for name, cls in views.__dict__.items():
-    idx = name.find('ViewSet')
-    if idx != -1:
-        router.register(name[:idx].lower(), cls)
-
 urlpatterns = [
-    path('', include(router.urls)),
     path(r'list', views.get_board_list, name='get_board_list'),
     path(r'all', views.get_board_all, name='get_board_all'),
+    re_path(r'^(?P<board>\w+)$', views.get_board, name='get_board'),
 ]
