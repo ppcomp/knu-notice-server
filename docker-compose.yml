@@ -20,7 +20,7 @@ services:
             python manage_dev.py collectstatic --no-input &&
             python manage_dev.py makemigrations && 
             python manage_dev.py migrate &&
-            gunicorn knu_notice.dev.wsgi -b 0:8080"
+            gunicorn knu_notice.dev.wsgi -b 0:8080 -e DEV=True"
         depends_on:
             - db
         volumes:
