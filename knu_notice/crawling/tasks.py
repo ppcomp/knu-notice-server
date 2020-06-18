@@ -16,18 +16,22 @@ from scrapy.utils.log import configure_logging
 from .crawler.crawler.spiders import crawl_spider
 from scrapy.settings import Settings
 
-scrapy_settings = Settings()
-os.environ['SCRAPY_SETTINGS_MODULE'] = 'crawling.crawler.crawler.settings'
-settings_module_path = os.environ['SCRAPY_SETTINGS_MODULE']
-scrapy_settings.setmodule(settings_module_path, priority='project')
 spiders = [
     # crawl_spider에 게시판 크롤링 class 생성 후 이 곳에 추가.
     # 이 곳에 있는 게시판(class)을 대상으로 crawling됨.
-    crawl_spider.MainSpider,
-    crawl_spider.CseSpider,
+    # crawl_spider.MainSpider,
+    # crawl_spider.CseSpider,
+    crawl_spider.CbaSpider,
 ]
 
-def crawling_start(scrapy_settings: Settings) -> List[Dict]:
+def get_scrapy_settings():
+    scrapy_settings = Settings()
+    os.environ['SCRAPY_SETTINGS_MODULE'] = 'crawling.crawler.crawler.settings'
+    settings_module_path = os.environ['SCRAPY_SETTINGS_MODULE']
+    scrapy_settings.setmodule(settings_module_path, priority='project')
+    return scrapy_settings
+
+def crawling_start(scrapy_settings: Settings, spiders: List[object]) -> List[Dict]:
     process = CrawlerProcess(scrapy_settings)
     crawler_list = []
     for spider in spiders:
@@ -45,6 +49,13 @@ def crawling_start(scrapy_settings: Settings) -> List[Dict]:
 
 @app.task
 def crawling():
-    proc = Process(target=crawling_start, args=(scrapy_settings,))
+    scrapy_settings = get_scrapy_settings()
+    proc = Process(
+        target=crawling_start, 
+        args=(
+            scrapy_settings,
+            spiders,
+        )
+    )
     proc.start()
     proc.join()

@@ -20,5 +20,6 @@ from . import views
 urlpatterns = [
     path(r'list', views.get_board_list, name='get_board_list'),
     path(r'all', views.get_board_all, name='get_board_all'),
+    path('init_db', views.init_db, name='init_db'),
     re_path(r'^(?P<board>\w+)$', views.get_board, name='get_board'),
 ]

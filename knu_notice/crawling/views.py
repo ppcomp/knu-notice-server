@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets
-from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAdminUser
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from itertools import chain
@@ -9,6 +10,22 @@ from operator import attrgetter
 from . import models
 from .data import data
 from .serializer import NoticeSerializer
+from crawling import tasks
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def init_db(request):
+    spiders = [
+        crawl_spider.MainSpider,
+        crawl_spider.CseSpider,
+        crawl_spider.CbaSpider
+    ]
+    scrapy_settings = tasks.get_scrapy_settings()
+    crawling_start(scrapy_settings, spiders)
+    return Response(
+        detail="Database initialized. All board notices are crawled.", 
+        code=200
+    )
 
 @api_view(['GET'])
 def get_board_list(request):
