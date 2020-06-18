@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-import scrapy
 from typing import Dict, List, Tuple
+import datetime
 
+import scrapy
 from crawling.data import data
 from .LinkExtractor import MyLinkExtractor
 
@@ -75,8 +76,14 @@ class DefaultSpider(scrapy.Spider):
 
     # date 형식에 맞게 조정
     # ex 2020.05.19 > 2020-05-19
+    #   20-05-19 > 2020-05-19
     def date_cleanse(self, dates: List[str]) -> List[str]:
-        return [date.replace('.','-') for date in dates]
+        ret = [date.replace('.','-') for date in dates]
+        try:
+            ret = [datetime.datetime.strptime(d, "%y-%m-%d").strftime("%Y-%m-%d") for d in ret]
+        except:
+            pass
+        return ret
 
     # Override parse()
     def parse(self, response) -> Dict:
