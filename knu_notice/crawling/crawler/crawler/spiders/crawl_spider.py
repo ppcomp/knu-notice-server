@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, List, Tuple
 import datetime
+import re
 
 import scrapy
 from crawling.data import data
@@ -75,15 +76,33 @@ class DefaultSpider(scrapy.Spider):
         return ids, urls
 
     # date 형식에 맞게 조정
-    # ex 2020.05.19 > 2020-05-19
-    #   20-05-19 > 2020-05-19
     def date_cleanse(self, dates: List[str]) -> List[str]:
-        ret = [date.replace('.','-') for date in dates]
-        try:
-            ret = [datetime.datetime.strptime(d, "%y-%m-%d").strftime("%Y-%m-%d") for d in ret]
-        except:
-            pass
-        return ret
+        today = datetime.date.today()
+        today_format = today.strftime("%Y-%m-%d")
+        type1 = re.compile(r'^\d{2}-\d{2}$')        # 05-19
+        type2 = re.compile(r'^\d{2}-\d{2}-\d{2}$')  # 20-05-19
+
+        fix1 = []
+        for date in dates:
+            d = date.replace('.','-')               # 2020.05.19 > 2020-05-19
+            d = d.replace('/','-')                  # 11:35 > 2020-05-19
+            fix1.append(d)
+
+        fix2 = []
+        for d in fix2:
+            if d.find(':'):
+                fix2.append(today_format)
+            elif type1.match(d):                                # 05-19
+                tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
+                tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
+                tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                fix2.append(tmp)
+            elif type2.match(d):                                # 20-05-19
+                tmp = datetime.datetime.strptime(d, "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
+                tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                fix2.append(tmp)
+
+        return fix2
 
     # Override parse()
     def parse(self, response) -> Dict:
