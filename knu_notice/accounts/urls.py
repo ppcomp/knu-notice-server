@@ -20,8 +20,8 @@ from . import views
 
 urlpatterns = [
     path('', include('allauth.urls')),
-    path('device', views.DeviceList.as_view()),
-    path('device/<int:pk>', views.DeviceDetail.as_view()),
+    path('device', views.DeviceView.as_view()),
+    path('device/list', views.DeviceList.as_view()),
     path('token', obtain_jwt_token),
     path('token/verify', verify_jwt_token),
     path('token/refresh', refresh_jwt_token),

@@ -36,10 +36,12 @@ INSTALLED_APPS = [
     'celery',
     'drf_yasg',
     'rest_framework',
+    'rest_framework.authtoken',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     # 'allauth.socialaccount.providers.google',
+    'sslserver',
 
     # app
     'crawling',
