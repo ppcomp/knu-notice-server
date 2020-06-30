@@ -17,7 +17,9 @@ class DeviceList(mixins.ListModelMixin,
                  generics.GenericAPIView):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
-    # permission_classes = [IsAdminUser] # 활성화시 admin 계정만 접근 가능
+
+    # permission_classes = [IsAdminUser,] # 활성화시 admin 계정만 접근 가능
+    # authentication_classes = [JSONWebTokenAuthentication,] # 활성화시 admin 계정만 접근 가능
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -37,11 +39,16 @@ class DeviceView(generics.GenericAPIView):
 
     def get_json_data(self, request):
         data = request.body.decode('utf-8')
+        if not data:
+            raise Exception("Request body is empty.")
         json_data = json.loads(data)
         return json_data
 
     def get(self, request, *args, **kwargs):
-        json_data = self.get_json_data(request)
+        try:
+            json_data = self.get_json_data(request)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         device = self.get_object(json_data['id'])
         serializer = self.get_serializer(device)
         return Response(serializer.data, status=status.HTTP_200_OK)
