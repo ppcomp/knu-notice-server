@@ -1,10 +1,9 @@
-from django.http import HttpResponse
+import json
+from django.http import HttpResponse, Http404
 from django.core.validators import ValidationError
-from rest_framework import status
-from rest_framework import mixins
-from rest_framework import generics
-from rest_framework.response import Response
+from rest_framework import status, mixins, generics
 from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
@@ -18,7 +17,7 @@ class DeviceList(mixins.ListModelMixin,
                  generics.GenericAPIView):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser] # 활성화시 admin 계정만 접근 가능
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -26,30 +25,45 @@ class DeviceList(mixins.ListModelMixin,
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
-class DeviceDetail(mixins.RetrieveModelMixin,
-                   mixins.UpdateModelMixin,
-                   mixins.DestroyModelMixin,
-                   generics.GenericAPIView):
-    queryset = Device.objects.all()
+class DeviceView(generics.GenericAPIView):
+
     serializer_class = DeviceSerializer
 
+    def get_object(self, pk):
+        try:
+            return Device.objects.get(pk=pk)
+        except Device.DoesNotExist:
+            raise Http404
+
+    def get_json_data(self, request):
+        data = request.body.decode('utf-8')
+        json_data = json.loads(data)
+        return json_data
+
     def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+        json_data = self.get_json_data(request)
+        device = self.get_object(json_data['id'])
+        serializer = self.get_serializer(device)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, *args, **kwargs):
-        serializer = self.get_serializer()
-        try:
-            validated_data = serializer.validate(request.data)
-            device, created = Device.objects.update_or_create(
-                id=validated_data.get('id', None),
-                defaults={'keywords': validated_data.get('keywords', None)}
-            )
-        except ValidationError as e:
-            return Response(e, status=status.HTTP_400_BAD_REQUEST)
-        if created:
-            return Response('Device registerd on server.', status=status.HTTP_201_CREATED)
-        else:
-            return Response('Keywords modified.', status=status.HTTP_200_OK)
+        json_data = self.get_json_data(request)
+        device = self.get_object(json_data['id'])
+        serializer = self.get_serializer(device, data=json_data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        json_data = self.get_json_data(request)
+        device = self.get_object(json_data['id'])
+        device.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
