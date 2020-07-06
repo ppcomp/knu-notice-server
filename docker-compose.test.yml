@@ -6,18 +6,6 @@ services:
         container_name: web01
         command: bash -c "
             python -m pytest -n 2"
-        depends_on:
-            - db
         volumes:
             - ./knu_notice:/home/src
             - /static:/static
-
-    db:
-        image: postgres:12.2
-        container_name: db01
-        ports:
-            - "5432:5432"
-        environment:
-            - POSTGRES_DB=postgres
-            - POSTGRES_USER=postgres
-            - POSTGRES_PASSWORD=postgres
