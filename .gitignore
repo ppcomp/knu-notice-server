@@ -8,6 +8,7 @@
 secret.json
 *.cert
 *.key
+postgres-passwd.txt
 
 ### Django ###
 *.log
