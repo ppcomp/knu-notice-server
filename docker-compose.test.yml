@@ -9,7 +9,7 @@ services:
         depends_on:
             - db
         volumes:
-            - ./knu_notice:/home/src
+            - ./knu_notice:/home/knu_notice
             - /static:/static
 
     db:

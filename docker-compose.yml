@@ -9,7 +9,7 @@ services:
             - "443:443"
             - "5050:5050"
         volumes:
-            - ./knu_notice:/home/src
+            - ./knu_notice:/home/knu_notice
             - ./config/nginx/:/etc/nginx/conf.d/
         depends_on:
             - web
@@ -25,7 +25,7 @@ services:
         depends_on:
             - db
         volumes:
-            - ./knu_notice:/home/src
+            - ./knu_notice:/home/knu_notice
         links:
             - redis
 
@@ -34,7 +34,7 @@ services:
         container_name: celery01
         command: celery worker --app=crawling.tasks --pidfile=
         volumes:
-            - ./knu_notice:/home/src
+            - ./knu_notice:/home/knu_notice
         depends_on:
             - db
             - redis
@@ -45,7 +45,7 @@ services:
         container_name: celery-beat01
         command: celery beat --app=crawling.tasks --pidfile=
         volumes:
-            - ./knu_notice:/home/src
+            - ./knu_notice:/home/knu_notice
         depends_on:
             - db
             - redis
