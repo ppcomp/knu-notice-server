@@ -45,11 +45,8 @@ class DeviceView(generics.GenericAPIView):
         return json_data
 
     def get(self, request, *args, **kwargs):
-        try:
-            json_data = self.get_json_data(request)
-        except:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        device = self.get_object(json_data['id'])
+        id = request.query_params.get('id')
+        device = self.get_object(id)
         serializer = self.get_serializer(device)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

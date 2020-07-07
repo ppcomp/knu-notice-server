@@ -6,10 +6,10 @@ def get_secret(setting):
     try:
         with open('knu_notice/secret.json', 'r') as f:
             secret = json.loads(f.read())
-        return secret[setting]
     except:
-        error_msg = "Set key '{0}' in secret.json".format(setting)
-        raise ImproperlyConfigured(error_msg)
+        with open('knu_notice/secret_dev.json', 'r') as f:
+            secret = json.loads(f.read())
+    return secret[setting]
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
