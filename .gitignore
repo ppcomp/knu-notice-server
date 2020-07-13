@@ -6,6 +6,9 @@
 !__init__.py
 .static_root/
 secret.json
+*.cert
+*.key
+postgres-passwd.txt
 
 ### Django ###
 *.log

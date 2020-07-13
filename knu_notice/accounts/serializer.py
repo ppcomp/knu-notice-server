@@ -4,19 +4,42 @@ from rest_framework import serializers
 from .models import User, Device
 from crawling import models
 
-class DeviceSerializer(serializers.ModelSerializer):
+class DynamicFieldsModelSerializer(serializers.ModelSerializer):
+    """
+    A ModelSerializer that takes an additional `fields` argument that
+    controls which fields should be displayed.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        fields = kwargs.pop('fields', None)
+
+        # Instantiate the superclass normally
+        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            allowed = set(fields)
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+class DeviceSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Device
         fields= [
             'id',
+            'id_method',
             'keywords',
+            'subscriptions',
         ]
         
     def validate(self, attrs):
-        keywords = attrs['keywords']
-        board_names = models.__dict__.keys()
-        k_list = keywords.split('+')
-        for k in k_list:
-            if k.title() not in board_names:
-                raise ValidationError(f"There is no board: '{k}'. Please check keywords.")
+        if 'subscriptions' in attrs.keys():
+            subscriptions = attrs['subscriptions']
+            subscription_list = subscriptions.split('+')
+            board_names = models.__dict__.keys()
+            for subscription in subscription_list:
+                if subscription.title() not in board_names:
+                    raise ValidationError(f"There is no board: '{subscription}'. Please check subscriptions.")
         return attrs
