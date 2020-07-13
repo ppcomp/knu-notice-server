@@ -139,7 +139,8 @@ CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_BEAT_SCHEDULE = {
     'hello': {
         'task': 'crawling.tasks.crawling',
-        'schedule': timedelta(seconds=600)
+        'schedule': timedelta(seconds=600),
+        'args': (1,)
     }
 }
 
