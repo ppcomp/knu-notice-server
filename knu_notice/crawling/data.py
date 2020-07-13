@@ -18,6 +18,7 @@ data = {
         'start_urls' : ['https://cse.kangwon.ac.kr/index.php?mt=page&mp=5_1_1'],
         'model' : 'Cse',
         'id' : 'BID',
+        'is_fixed' : '//*[@id="bbsWrap"]/table/tbody/tr/td[1]/img',
         'page' : 'cpage',
         'url_xpath' : '//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a',
         'titles_xpath' : '//*[@id="bbsWrap"]/table/tbody/tr/td[2]/a/text()',

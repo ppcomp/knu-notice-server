@@ -20,9 +20,9 @@ spiders = [
    # crawl_spider에 게시판 크롤링 class 생성 후 이 곳에 추가.
     # 이 곳에 있는 게시판(class)을 대상으로 crawling됨.
     # crawl_spider.MainSpider,
-    # crawl_spider.CseSpider,
+    crawl_spider.CseSpider,
     # crawl_spider.CbaSpider,
-    crawl_spider.BizSpider,
+    # crawl_spider.BizSpider,
     # crawl_spider.AccountSpider,
     # crawl_spider.ItSpider,
     # crawl_spider.EconomicsSpider,

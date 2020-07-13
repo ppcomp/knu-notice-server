@@ -31,13 +31,13 @@ class DefaultSpider(scrapy.Spider):
             # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
             raise Exception(f'{when}, Crawled item is empty! Check the xpaths or base url.')
         for key, value in item.items():
-            if key != 'model':
+            if key not in ('model',):
                 if len(value) != id_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
                     raise Exception(f"{when}, {key} size is not same with id. ({key} size: {len(value)}, id size: {id_len})")
             if ((key == 'dates' and self.dates_xpath) or
                 (key == 'authors' and self.authors_xpath) or
-                (key == 'dates' and self.dates_xpath)):
+                (key == 'references' and self.references_xpath)):
                 # valid check. 크롤링된 데이터의 유효성 검증.
                 if value[0] is None:
                     raise Exception(f'{when}, {key} is None.')
@@ -48,6 +48,7 @@ class DefaultSpider(scrapy.Spider):
     def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
+        self.is_fixed = args['is_fixed']
         self.url_xpath = args['url_xpath']
         self.titles_xpath = args['titles_xpath']
         self.dates_xpath = args['dates_xpath']
@@ -109,6 +110,10 @@ class DefaultSpider(scrapy.Spider):
 
         return fix2
 
+    def extend_list(self, arr:List[str], target:int) -> List[str]:
+        add = [None for i in range(target)]
+        return arr + add
+
     # Override parse()
     def parse(self, response) -> Dict:
         if response.status == 404:
@@ -120,6 +125,12 @@ class DefaultSpider(scrapy.Spider):
 
         titles: List[str] = self.remove_whitespace(
             response.xpath(self.titles_xpath).getall())
+
+        if self.is_fixed:
+            is_fixeds: List[str] = self.remove_whitespace(
+                response.xpath(self.is_fixed).getall())
+        else:
+            dates: List[None] = [None for _ in range(len(links))]
 
         if self.dates_xpath:
             dates: List[str] = self.remove_whitespace(
@@ -141,10 +152,12 @@ class DefaultSpider(scrapy.Spider):
             references: List[None] = [None for _ in range(len(links))]
 
         ids, links = self.split_id_and_link(links)  # id, link 추출
+        is_fixeds = self.extend_list(is_fixeds, len(ids)-len(is_fixeds))
 
         self._data_verification({
             'model':self.model,
             'ids':ids, 
+            'is_fixeds':is_fixeds,
             'titles':titles, 
             'links':links, 
             'dates':dates, 
@@ -152,11 +165,12 @@ class DefaultSpider(scrapy.Spider):
             'references':references,
         })
 
-        for id, title, link, date, author, reference in zip(
-            ids, titles, links, dates, authors, references):
+        for id, is_fixed, title, link, date, author, reference in zip(
+            ids, is_fixeds, titles, links, dates, authors, references):
             scrapyed_info = {
                 'model' : self.model,
                 'id' : id,
+                'is_fixed' : is_fixed,
                 'title' : title,
                 'link' : link,
                 'date' : date,
