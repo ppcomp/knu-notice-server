@@ -2,7 +2,7 @@ data = {
     'main' : {
         'api_url' : '/notice/main',
         'name' : '강원대학교',
-        'start_urls' : ['https://www.kangwon.ac.kr/www/selectBbsNttList.do?bbsNo=37&&pageUnit=10'],
+        'start_urls' : ['https://www.kangwon.ac.kr/www/selectBbsNttList.do?bbsNo=37'],
         'model' : 'Main',
         'id' : 'nttNo',
         'page' : 'pageIndex',
@@ -15,7 +15,7 @@ data = {
     'cse' : {
         'api_url' : '/notice/cse',
         'name' : '컴퓨터공학과',
-        'start_urls' : ['https://cse.kangwon.ac.kr/index.php?mt=page&mp=5_1_1&mm=oxbbs&oxid=9&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['https://cse.kangwon.ac.kr/index.php?mt=page&mp=5_1_1'],
         'model' : 'Cse',
         'id' : 'BID',
         'page' : 'cpage',
@@ -275,7 +275,7 @@ data = {
     'archi' : {
         'api_url' : '/notice/archi',
         'name' : '건축공학과',
-        'start_urls' : ['http://archi.kangwon.ac.kr/index.php?mt=page&mp=4_1_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://archi.kangwon.ac.kr/index.php?mt=page&mp=4_1_1'],
         'model' : 'Archi',
         'id' : 'BID',
         'page' : 'cpage',
@@ -288,7 +288,7 @@ data = {
     'civil' : {
         'api_url' : '/notice/civil',
         'name' : '토목공학과',
-        'start_urls' : ['http://civil.kangwon.ac.kr/2014/index.php?mt=page&mp=6_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://civil.kangwon.ac.kr/2014/index.php?mt=page&mp=6_1'],
         'model' : 'Civil',
         'id' : 'BID',
         'page' : 'cpage',
@@ -301,7 +301,7 @@ data = {
     'mechanical' : {
         'api_url' : '/notice/mechanical',
         'name' : '기계의용공학과',
-        'start_urls' : ['http://mechanical.kangwon.ac.kr/index.php?mt=page&mp=5_1&mm=oxbbs&oxid=34&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://mechanical.kangwon.ac.kr/index.php?mt=page&mp=5_1'],
         'model' : 'Mechanical',
         'id' : 'BID',
         'page' : 'cpage',
@@ -314,7 +314,7 @@ data = {
     'material' : {
         'api_url' : '/notice/material',
         'name' : '재료공학과',
-        'start_urls' : ['http://material.kangwon.ac.kr/index.php?mt=page&mp=5_1_1&mm=oxbbs&oxid=4&key=&val=&subcmd=&CAT_ID=5&artpp=15'],
+        'start_urls' : ['http://material.kangwon.ac.kr/index.php?mt=page&mp=5_1_1'],
         'model' : 'Material',
         'id' : 'BID',
         'page' : 'cpage',
@@ -327,7 +327,7 @@ data = {
     'enre' : {
         'api_url' : '/notice/enre',
         'name' : '에너지자원공학과',
-        'start_urls' : ['http://www.enre.kr/index.php?mt=page&mp=5_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://www.enre.kr/index.php?mt=page&mp=5_1'],
         'model' : 'Enre',
         'id' : 'BID',
         'page' : 'cpage',
@@ -340,7 +340,7 @@ data = {
     'sme' : {
         'api_url' : '/notice/sme',
         'name' : '산업공학과',
-        'start_urls' : ['http://sme.kangwon.ac.kr/index.php?mt=page&mp=5_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://sme.kangwon.ac.kr/index.php?mt=page&mp=5_1'],
         'model' : 'Sme',
         'id' : 'BID',
         'page' : 'cpage',
@@ -353,7 +353,7 @@ data = {
     'chemeng' : {
         'api_url' : '/notice/chemeng',
         'name' : '화학공학과',
-        'start_urls' : ['http://chemeng.kangwon.ac.kr/index.php?mt=page&mp=5_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://chemeng.kangwon.ac.kr/index.php?mt=page&mp=5_1'],
         'model' : 'Chemeng',
         'id' : 'BID',
         'page' : 'cpage',
@@ -366,7 +366,7 @@ data = {
     'bioeng' : {
         'api_url' : '/notice/bioeng',
         'name' : '생물공학과',
-        'start_urls' : ['http://bioeng.kangwon.ac.kr/index.php?mt=page&mp=6_1_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://bioeng.kangwon.ac.kr/index.php?mt=page&mp=6_1_1'],
         'model' : 'Bioeng',
         'id' : 'BID',
         'page' : 'cpage',
@@ -444,7 +444,7 @@ data = {
     'mathedu' : {
         'api_url' : '/notice/mathedu',
         'name' : '수학교육과',
-        'start_urls' : ['http://mathedu.kangwon.ac.kr/main.php?mt=page&mp=3_1&mm=oxbbs&oxid=2&key=&val=&subcmd=&artpp=15'],
+        'start_urls' : ['http://mathedu.kangwon.ac.kr/main.php?mt=page&mp=3_1'],
         'model' : 'Mathedu',
         'id' : 'BID',
         'page' : 'cpage',
@@ -457,7 +457,7 @@ data = {
     'history' : {
         'api_url' : '/notice/history',
         'name' : '역사교육과',
-        'start_urls' : ['http://history.kangwon.ac.kr/index.php?mt=page&mp=5_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://history.kangwon.ac.kr/index.php?mt=page&mp=5_1'],
         'model' : 'History',
         'id' : 'BID',
         'page' : 'cpage',
@@ -851,7 +851,7 @@ data = {
     'it' : {
         'api_url' : '/notice/it',
         'name' : 'IT대학',
-        'start_urls' : ['http://it.kangwon.ac.kr/index.php?mt=page&mp=4_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://it.kangwon.ac.kr/index.php?mt=page&mp=4_1'],
         'model' : 'It',
         'id' : 'BID',
         'page' : 'cpage',
