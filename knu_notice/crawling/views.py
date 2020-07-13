@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
@@ -10,21 +10,16 @@ from operator import attrgetter
 from . import models
 from .data import data
 from .serializer import NoticeSerializer
-from crawling import tasks
+from .crawler.crawler.spiders import crawl_spider
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def init_db(request):
-    spiders = [
-        crawl_spider.MainSpider,
-        crawl_spider.CseSpider,
-        crawl_spider.CbaSpider
-    ]
-    scrapy_settings = tasks.get_scrapy_settings()
-    crawling_start(scrapy_settings, spiders)
+    from crawling import tasks
+    tasks.crawling(10)
     return Response(
-        detail="Database initialized. All board notices are crawled.", 
-        code=200
+        "Database initialized. All board notices are crawled.", 
+        status=status.HTTP_200_OK
     )
 
 @api_view(['GET'])

@@ -19,14 +19,14 @@ from scrapy.settings import Settings
 spiders = [
    # crawl_spider에 게시판 크롤링 class 생성 후 이 곳에 추가.
     # 이 곳에 있는 게시판(class)을 대상으로 crawling됨.
-    crawl_spider.MainSpider,
-    crawl_spider.CseSpider
-    crawl_spider.CbaSpider,
-    crawl_spider.BizSpider,
-    crawl_spider.AccountSpider,
-    crawl_spider.ItSpider,
-    crawl_spider.EconomicsSpider,
-    crawl_spider.TourismSpider,
+    # crawl_spider.MainSpider,
+    crawl_spider.CseSpider,
+    # crawl_spider.CbaSpider,
+    # crawl_spider.BizSpider,
+    # crawl_spider.AccountSpider,
+    # crawl_spider.ItSpider,
+    # crawl_spider.EconomicsSpider,
+    # crawl_spider.TourismSpider,
 ]
 
 def get_scrapy_settings():
@@ -53,8 +53,9 @@ def crawling_start(scrapy_settings: Settings, spiders: List[object]) -> List[Dic
     return stats_dic_list
 
 @app.task
-def crawling():
+def crawling(page_num):
     scrapy_settings = get_scrapy_settings()
+    crawl_spider.page_num = page_num
     proc = Process(
         target=crawling_start, 
         args=(
