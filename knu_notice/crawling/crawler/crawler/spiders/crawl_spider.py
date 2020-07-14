@@ -48,7 +48,7 @@ class DefaultSpider(scrapy.Spider):
     def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
-        self.is_fixed = args['is_fixed']
+        self.is_fixed = args['is_fixed'] if 'is_fixed' in args.keys() else None
         self.url_xpath = args['url_xpath']
         self.titles_xpath = args['titles_xpath']
         self.dates_xpath = args['dates_xpath']
@@ -130,7 +130,7 @@ class DefaultSpider(scrapy.Spider):
             is_fixeds: List[str] = self.remove_whitespace(
                 response.xpath(self.is_fixed).getall())
         else:
-            dates: List[None] = [None for _ in range(len(links))]
+            is_fixeds: List[None] = [None for _ in range(len(links))]
 
         if self.dates_xpath:
             dates: List[str] = self.remove_whitespace(
