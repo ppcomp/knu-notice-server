@@ -5,6 +5,8 @@ from crawling.data import data
 
 class Notice(models.Model):
     id = models.CharField(max_length=30, primary_key=True)
+    site = models.CharField(max_length=30)
+    is_fixed = models.BooleanField(default=False)
     title = models.CharField(max_length=100)
     link = models.CharField(max_length=200)
     date = models.DateField()
@@ -12,7 +14,7 @@ class Notice(models.Model):
     reference = models.CharField(max_length=50,null=True)
 
     class Meta:
-        ordering = ['-date']  # 기본 정렬: 시간 내림차순(최신 우선)
+        ordering = ['-is_fixed', '-date']  # 기본 정렬: 고정 공지 우선, 시간 내림차순(최신 우선)
 
     def __str__(self):
         return self.title

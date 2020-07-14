@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-import scrapy
 from typing import Dict, List, Tuple
+import datetime
+import re
 
+import scrapy
 from crawling.data import data
 from .LinkExtractor import MyLinkExtractor
 
@@ -29,11 +31,13 @@ class DefaultSpider(scrapy.Spider):
             # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
             raise Exception(f'{when}, Crawled item is empty! Check the xpaths or base url.')
         for key, value in item.items():
-            if key != 'model':
+            if key not in ('model',):
                 if len(value) != id_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
                     raise Exception(f"{when}, {key} size is not same with id. ({key} size: {len(value)}, id size: {id_len})")
-            if key != 'references':
+            if ((key == 'dates' and self.dates_xpath) or
+                (key == 'authors' and self.authors_xpath) or
+                (key == 'references' and self.references_xpath)):
                 # valid check. 크롤링된 데이터의 유효성 검증.
                 if value[0] is None:
                     raise Exception(f'{when}, {key} is None.')
@@ -44,6 +48,7 @@ class DefaultSpider(scrapy.Spider):
     def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
+        self.is_fixed = args['is_fixed']
         self.url_xpath = args['url_xpath']
         self.titles_xpath = args['titles_xpath']
         self.dates_xpath = args['dates_xpath']
@@ -74,9 +79,40 @@ class DefaultSpider(scrapy.Spider):
         return ids, urls
 
     # date 형식에 맞게 조정
-    # ex 2020.05.19 > 2020-05-19
     def date_cleanse(self, dates: List[str]) -> List[str]:
-        return [date.replace('.','-') for date in dates]
+        today = datetime.date.today()
+        today_format = today.strftime("%Y-%m-%d")
+        type1 = re.compile(r'^\d{2}-\d{2}$')        # 05-19
+        type2 = re.compile(r'^\d{2}-\d{2}-\d{2}$')  # 20-05-19
+        type3 = re.compile(r'^\d{4}-\d{2}-\d{2}$')  # 2020-05-19
+
+        fix1 = []
+        for date in dates:
+            d = date.replace('.','-')               # 2020.05.19 > 2020-05-19
+            d = d.replace('/','-')                  # 11:35 > 2020-05-19
+            fix1.append(d)
+
+        fix2 = []
+        for d in fix1:
+            if d.find(':') != -1:
+                fix2.append(today_format)
+            elif type1.match(d):                                # 05-19
+                tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
+                tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
+                tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                fix2.append(tmp)
+            elif type2.match(d):                                # 20-05-19
+                tmp = datetime.datetime.strptime(d, "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
+                tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                fix2.append(tmp)
+            elif type3.match(d):                                # 2020-05-19
+                fix2.append(d)
+
+        return fix2
+
+    def extend_list(self, arr:List[str], target:int) -> List[str]:
+        add = [None for i in range(target)]
+        return arr + add
 
     # Override parse()
     def parse(self, response) -> Dict:
@@ -90,11 +126,24 @@ class DefaultSpider(scrapy.Spider):
         titles: List[str] = self.remove_whitespace(
             response.xpath(self.titles_xpath).getall())
 
-        dates: List[str] = self.remove_whitespace(
-            response.xpath(self.dates_xpath).getall())
+        if self.is_fixed:
+            is_fixeds: List[str] = self.remove_whitespace(
+                response.xpath(self.is_fixed).getall())
+        else:
+            dates: List[None] = [None for _ in range(len(links))]
 
-        authors: List[str] = self.remove_whitespace(
-            response.xpath(self.authors_xpath).getall())
+        if self.dates_xpath:
+            dates: List[str] = self.remove_whitespace(
+                response.xpath(self.dates_xpath).getall())
+            dates = self.date_cleanse(dates)        # date 형식에 맞게 조정
+        else:
+            dates: List[None] = [None for _ in range(len(links))]
+
+        if self.authors_xpath:
+            authors: List[str] = self.remove_whitespace(
+                response.xpath(self.authors_xpath).getall())
+        else:
+            authors: List[None] = [None for _ in range(len(links))]
 
         if self.references_xpath:
             references: List[str] = self.remove_whitespace(
@@ -102,13 +151,13 @@ class DefaultSpider(scrapy.Spider):
         else:
             references: List[None] = [None for _ in range(len(links))]
 
-        # Data cleansing
         ids, links = self.split_id_and_link(links)  # id, link 추출
-        dates = self.date_cleanse(dates)            # date 형식에 맞게 조정
+        is_fixeds = self.extend_list(is_fixeds, len(ids)-len(is_fixeds))
 
         self._data_verification({
             'model':self.model,
             'ids':ids, 
+            'is_fixeds':is_fixeds,
             'titles':titles, 
             'links':links, 
             'dates':dates, 
@@ -116,11 +165,13 @@ class DefaultSpider(scrapy.Spider):
             'references':references,
         })
 
-        for id, title, link, date, author, reference in zip(
-            ids, titles, links, dates, authors, references):
+        for id, is_fixed, title, link, date, author, reference in zip(
+            ids, is_fixeds, titles, links, dates, authors, references):
             scrapyed_info = {
                 'model' : self.model,
                 'id' : id,
+                'site' : self.model.lower(),
+                'is_fixed' : is_fixed,
                 'title' : title,
                 'link' : link,
                 'date' : date,
@@ -129,26 +180,25 @@ class DefaultSpider(scrapy.Spider):
             }
             yield scrapyed_info
 
-'''
-class MainSpider(DefaultSpider):
-    def __init__(self):
-        from crawling.data import data 
-        args = data['main']
-        self.name = args['name']
-        self.start_urls = args['start_urls']
-        super().__init__()
-        super().set_args(args)
-'''
-# 위와 같은 형식의 Spider Class 자동 생성
+page_num = 1
+# Spider Class 자동 생성
 for key, item in data.items():
     if key.find('test') == -1:
         txt = f"""
 class {key.capitalize()}Spider(DefaultSpider):
     def __init__(self):
-        from crawling.data import data 
+        from crawling.data import data
         args = data['{key}']
+
         self.name = args['name']
-        self.start_urls = args['start_urls']
+        if args['page']:
+            url:str = args['start_urls'][0]
+            url_page = url + '&' + args['page'] + '=%d'
+            urls = [url_page % i for i in range(1, page_num+1)]
+            self.start_urls = urls
+        else:
+            self.start_urls = args['start_urls']
+
         super().__init__()
         super().set_args(args)
 """

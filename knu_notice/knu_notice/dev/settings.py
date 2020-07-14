@@ -83,6 +83,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
 }
 
 
@@ -139,7 +141,8 @@ CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_BEAT_SCHEDULE = {
     'hello': {
         'task': 'crawling.tasks.crawling',
-        'schedule': timedelta(seconds=600)
+        'schedule': timedelta(seconds=600),
+        'args': (1,)
     }
 }
 

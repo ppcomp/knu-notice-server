@@ -15,6 +15,8 @@ class CrawlerPipeline:
         notice, created = model.objects.get_or_create(
             id = item['id'],  # id만 일치하면 기존에 있던 데이터라고 판단.
             defaults={
+                'site':item['site'],
+                'is_fixed':True if item['is_fixed'] else False,
                 'title':item['title'],
                 'link':item['link'],
                 'date':item['date'],
