@@ -5,6 +5,7 @@ from crawling.data import data
 
 class Notice(models.Model):
     id = models.CharField(max_length=30, primary_key=True)
+    site = models.CharField(max_length=30)
     is_fixed = models.BooleanField(default=False)
     title = models.CharField(max_length=100)
     link = models.CharField(max_length=200)

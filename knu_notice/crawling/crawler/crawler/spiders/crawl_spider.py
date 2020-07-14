@@ -170,6 +170,7 @@ class DefaultSpider(scrapy.Spider):
             scrapyed_info = {
                 'model' : self.model,
                 'id' : id,
+                'site' : self.model.lower(),
                 'is_fixed' : is_fixed,
                 'title' : title,
                 'link' : link,
