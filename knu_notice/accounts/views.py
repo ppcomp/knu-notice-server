@@ -7,8 +7,21 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
-from .models import Device
-from .serializer import DeviceSerializer
+from .models import Device, User
+from .serializer import DeviceSerializer, UserSerializer
+
+def get_object(model, pk):
+    try:
+        return model.objects.get(pk=pk)
+    except model.DoesNotExist:
+        raise Http404
+
+def get_json_data(request):
+    data = request.body.decode('utf-8')
+    if not data:
+        raise Exception("Request body is empty.")
+    json_data = json.loads(data)
+    return json_data
 
 # 개발 전용
 class DeviceList(mixins.ListModelMixin,
@@ -27,27 +40,14 @@ class DeviceList(mixins.ListModelMixin,
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
-class DeviceView(generics.GenericAPIView):
+class Account(generics.GenericAPIView):
 
-    serializer_class = DeviceSerializer
-
-    def get_object(self, pk):
-        try:
-            return Device.objects.get(pk=pk)
-        except Device.DoesNotExist:
-            raise Http404
-
-    def get_json_data(self, request):
-        data = request.body.decode('utf-8')
-        if not data:
-            raise Exception("Request body is empty.")
-        json_data = json.loads(data)
-        return json_data
+    model = None
 
     def get(self, request, *args, **kwargs):
         id = request.query_params.get('id')
-        device = self.get_object(id)
-        serializer = self.get_serializer(device)
+        obj = get_object(self.model, id)
+        serializer = self.get_serializer(obj)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
@@ -58,16 +58,38 @@ class DeviceView(generics.GenericAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, *args, **kwargs):
-        json_data = self.get_json_data(request)
-        device = self.get_object(json_data['id'])
-        serializer = self.get_serializer(device, data=json_data)
+        json_data = get_json_data(request)
+        obj = get_object(self.model, json_data['id'])
+        serializer = self.get_serializer(obj, data=json_data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, *args, **kwargs):
-        json_data = self.get_json_data(request)
-        device = self.get_object(json_data['id'])
-        device.delete()
+        json_data = get_json_data(request)
+        obj = get_object(self.model, json_data['id'])
+        obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DeviceView(Account):
+
+    serializer_class = DeviceSerializer
+    model = Device
+
+
+class UserView(Account):
+
+    serializer_class = UserSerializer
+    model = User
+
+    def post(self, request, *args, **kwargs):
+        json_data = get_json_data(request)
+        device = get_object(Device, str(json_data['device_id']))
+        json_data['device'] = device
+        serializer = self.get_serializer(data=json_data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

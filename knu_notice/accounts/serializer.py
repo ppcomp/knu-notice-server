@@ -43,3 +43,12 @@ class DeviceSerializer(DynamicFieldsModelSerializer):
                 if subscription.title() not in board_names:
                     raise ValidationError(f"There is no board: '{subscription}'. Please check subscriptions.")
         return attrs
+
+class UserSerializer(DynamicFieldsModelSerializer):
+    class Meta:
+        model = User
+        fields= [
+            'id',
+            'email',
+            'device',
+        ]
