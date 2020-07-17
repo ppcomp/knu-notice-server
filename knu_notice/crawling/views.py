@@ -14,9 +14,9 @@ from .crawler.crawler.spiders import crawl_spider
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
-def init_db(request):
+def init(request, pages):
     from crawling import tasks
-    tasks.crawling.delay(10)
+    tasks.crawling.delay(pages)
     return Response(
         "Database initialized. All board notices are crawled.", 
         status=status.HTTP_200_OK
@@ -24,11 +24,13 @@ def init_db(request):
 
 @api_view(['GET'])
 def get_board_list(request):
+    from crawling import tasks
     ret = []
-    for value in data.values():
+    for spider in tasks.spiders:
+        code = spider.__name__[:spider.__name__.find('Spider')].lower()
         ret.append({
-            'name':value['name'],
-            'api_url':value['api_url'],
+            'name':data[code]['name'],
+            'api_url':data[code]['api_url'],
         })
     return Response(ret)
 

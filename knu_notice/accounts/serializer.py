@@ -35,7 +35,7 @@ class DeviceSerializer(DynamicFieldsModelSerializer):
         ]
         
     def validate(self, attrs):
-        if 'subscriptions' in attrs.keys():
+        if 'subscriptions' in attrs.keys() and attrs['subscriptions'] is not '':
             subscriptions = attrs['subscriptions']
             subscription_list = subscriptions.split('+')
             board_names = models.__dict__.keys()
