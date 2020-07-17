@@ -128,10 +128,10 @@ data = {
     'knucals' : {
         'api_url' : '/notice/knucals',
         'name' : '농업생명과학대학',
-        'start_urls' : ['http://knucals.kangwon.ac.kr/contents.do?v=&cid=db2548006ba044b09df5b6b5df7aacd4&masterId=03cc0395b649458081fb83355712a973'],
+        'start_urls' : ['http://knucals.kangwon.ac.kr/contents.do?cid=db2548006ba044b09df5b6b5df7aacd4'],
         'model' : 'Knucals',
         'id' : 'id',
-        'is_fixed' : '/html/body/div/div[2]/div/div[2]/div/div[2]/div[2]/div[2]/ul/li/span[1]/span',
+        'is_fixed' : '/html/body/div/div[2]/div/div[2]/div/div[2]/div[2]/div[2]/ul/li/span[1]/span/text()',
         'page' : 'pageIndex',
         'url_xpath' : '/html/body/div/div[2]/div/div[2]/div/div[2]/div[2]/div[2]/ul/li/span[3]/a',
         'titles_xpath' : '/html/body/div/div[2]/div/div[2]/div/div[2]/div[2]/div[2]/ul/li/span[3]/a/text()',
@@ -254,9 +254,9 @@ data = {
     'dbe' : {
         'api_url' : '/notice/dbe',
         'name' : '바이오자원환경학과',
-        'start_urls' : ['https://dbe.kangwon.ac.kr/dbe/bbs_list.php?bbs_data=c3RhcnRQYWdlPTAmY29kZT1zdWIwN2EmdGFibGU9Y3NfYmJzX2RhdGEmc2VhcmNoX2l0ZW09JnNlYXJjaF9vcmRlcj0mdXJsPXN1YjA3YSZrZXl2YWx1ZT1zdWIwNw==||'],
+        'start_urls' : ['https://dbe.kangwon.ac.kr/dbe/bbs_list.php?bbs_data=c3RhcnRQYWdlPTAmY29kZT1zdWIwN2EmdGFibGU9Y3NfYmJzX2RhdGEmc2VhcmNoX2l0ZW09JnNlYXJjaF9vcmRlcj0mdXJsPXN1YjA3YSZrZXl2YWx1ZT1zdWIwNw'],
         'model' : 'Dbe',
-        'id' : None,
+        'id' : 'bbs_data',
         'is_fixed' : '/html/body/div[4]/div/div[2]/div[3]/div[1]/table/tbody/tr/td[1]/img',
         'page' : None,
         'url_xpath' : '/html/body/div[4]/div/div[2]/div[3]/div[1]/table/tbody/tr/td[2]/a',
@@ -268,9 +268,9 @@ data = {
     'ecoenv' : {
         'api_url' : '/notice/ecoenv',
         'name' : '에코환경과학과',
-        'start_urls' : ['https://ecoenv.kangwon.ac.kr/ecoenv/bbs_list.php?bbs_data=c3RhcnRQYWdlPTAmY29kZT1zdWIwN2EmdGFibGU9Y3NfYmJzX2RhdGEmc2VhcmNoX2l0ZW09JnNlYXJjaF9vcmRlcj0mdXJsPXN1YjA3YSZrZXl2YWx1ZT1zdWIwNw==||'],
+        'start_urls' : ['https://ecoenv.kangwon.ac.kr/ecoenv/bbs_list.php?bbs_data=c3RhcnRQYWdlPTAmY29kZT1zdWIwN2EmdGFibGU9Y3NfYmJzX2RhdGEmc2VhcmNoX2l0ZW09JnNlYXJjaF9vcmRlcj0mdXJsPXN1YjA3YSZrZXl2YWx1ZT1zdWIwNw'],
         'model' : 'Ecoenv',
-        'id' : None,
+        'id' : 'bbs_data',
         'is_fixed' : '/html/body/div[4]/div/div[2]/div[3]/div[1]/table/tbody/tr/td[1]/img',
         'page' : None,
         'url_xpath' : '/html/body/div[4]/div/div[2]/div[3]/div[1]/table/tbody/tr/td[2]/a',
@@ -338,7 +338,7 @@ data = {
     'ace' : {
         'api_url' : '/notice/ace',
         'name' : '문화예술·공과대학',
-        'start_urls' : ['http://ace.kangwon.ac.kr/index.php?mt=page&mp=4_1&mm=oxbbs&oxid=1&key=&val=&subcmd=&CAT_ID=0&artpp=15'],
+        'start_urls' : ['http://ace.kangwon.ac.kr/index.php?mt=page&mp=4_1'],
         'model' : 'Ace',
         'id' : 'BID',
         'is_fixed' : '//*[@id="bbsWrap"]/table/tbody/tr/td[1]/img',
@@ -775,7 +775,7 @@ data = {
         'start_urls' : ['http://re1978.kangwon.ac.kr/bbs/zboard.php?id=bbs41'],
         'model' : 'Re1978',
         'id' : 'no',
-        'is_fixed' : '/html/body/table[1]/tbody/tr/td[2]/table/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr[2]/td/table[2]/tbody/tr/td/div/table[3]/tbody/tr/td/table[1]/tbody/tr/td[1]',
+        'is_fixed' : '/html/body/table[1]/tbody/tr/td[2]/table/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr[2]/td/table[2]/tbody/tr/td/div/table[3]/tbody/tr/td/table[1]/tbody/tr/td[1]/text()',
         'page' : 'page',
         'url_xpath' : '/html/body/table[1]/tbody/tr/td[2]/table/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr[2]/td/table[2]/tbody/tr/td/div/table[3]/tbody/tr/td/table[1]/tbody/tr/td[2]/a',
         'titles_xpath' : '/html/body/table[1]/tbody/tr/td[2]/table/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr[2]/td/table[2]/tbody/tr/td/div/table[3]/tbody/tr/td/table[1]/tbody/tr/td[2]/a/text()',
@@ -1344,10 +1344,6 @@ data = {
         'authors_xpath' : '/html/body/div[4]/div/div[2]/div[3]/div[1]/table/tbody/tr/td[3]/text()',
         'references_xpath' : None,
      },
-
-
-
-
 }
 
 
