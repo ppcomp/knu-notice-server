@@ -23,18 +23,18 @@ class DefaultSpider(scrapy.Spider):
     def _data_verification(self, item: Dict[str, List]):
         from crawling import models
         when = f'While crawling {self.name}'
-        id_len = len(item['ids'])
+        title_len = len(item['titles'])
 
         # model check
         eval(f"models.{item['model']}")
-        if id_len == 0:
+        if title_len == 0:
             # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
             raise Exception(f'{when}, Crawled item is empty! Check the xpaths or base url.')
         for key, value in item.items():
-            if key not in ('model',):
-                if len(value) != id_len:
+            if key in ('id','link'):
+                if len(value) != title_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
-                    raise Exception(f"{when}, {key} size is not same with id. ({key} size: {len(value)}, id size: {id_len})")
+                    raise Exception(f"{when}, {key} size is not same with title's. ({key} size: {len(value)}, id size: {title_len})")
             if ((key == 'dates' and self.dates_xpath) or
                 (key == 'authors' and self.authors_xpath) or
                 (key == 'references' and self.references_xpath)):
@@ -71,6 +71,7 @@ class DefaultSpider(scrapy.Spider):
         for link in links:
             urls.append(link.url+'&')
         for url in urls:
+            print(url)
             idx = url.find(self.id)+len(self.id)+1
             for i in range(idx, len(url)):
                 if url[i] == "&":
@@ -96,17 +97,28 @@ class DefaultSpider(scrapy.Spider):
         for d in fix1:
             if d.find(':') != -1:
                 fix2.append(today_format)
-            elif type1.match(d):                                # 05-19
-                tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
-                tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
-                tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+            elif type1.match(d):                                    # 05-19
+                # try:
+                #     tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
+                #     tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
+                #     tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                # except:
+                #     tmp = None
+                fix2.append(None)
+            elif type2.match(d):                                    # 20-05-19
+                try:
+                    tmp = datetime.datetime.strptime(d, "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
+                    tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                except:
+                    tmp = None
                 fix2.append(tmp)
-            elif type2.match(d):                                # 20-05-19
-                tmp = datetime.datetime.strptime(d, "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
-                tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+            elif type3.match(d):                                    # 2020-05-19
+                try:
+                    tmp = datetime.datetime.strptime(d, "%Y-%m-%d")
+                    tmp = tmp.strftime("%Y-%m-%d")
+                except:
+                    tmp = None
                 fix2.append(tmp)
-            elif type3.match(d):                                # 2020-05-19
-                fix2.append(d)
 
         return fix2
 

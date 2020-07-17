@@ -16,7 +16,7 @@ from .crawler.crawler.spiders import crawl_spider
 @permission_classes([IsAdminUser])
 def init_db(request):
     from crawling import tasks
-    tasks.crawling(10)
+    tasks.crawling.delay(10)
     return Response(
         "Database initialized. All board notices are crawled.", 
         status=status.HTTP_200_OK
