@@ -22,37 +22,45 @@ class TestBoards(TestCase):
         assert status.is_success(response.status_code)
 
 class TestDevices(TestCase):
-    def test_accounts_device(self):
+    @classmethod
+    def setUpTestData(cls):
         data = {
             'id':'test',
             'keywords':'keyw',
             'subscriptions':'main',
         }
         response = client.post('/accounts/device', data=data, content_type='application/json')
-        print(response)
+
+    def test_accounts_device_post(self):
+        data = {
+            'id':'post',
+            'keywords':'keyw',
+            'subscriptions':'main',
+        }
+        response = client.post('/accounts/device', data=data, content_type='application/json')
         assert status.is_success(response.status_code)
 
+    def test_accounts_device_get(self):
         data = {
             'id':'test',
         }
         response = client.get('/accounts/device', data=data, follow=True)
-        print(response)
         assert status.is_success(response.status_code)
 
+    def test_accounts_device_put(self):
         data = {
             'id':'test',
             'keywords':'test',
             'subscriptions':'cse',
         }
         response = client.put('/accounts/device', data=data, content_type='application/json')
-        print(response)
         assert status.is_success(response.status_code)
 
+    def test_accounts_device_delete(self):
         data = {
             'id':'test',
         }
         response = client.delete('/accounts/device', data=data, content_type='application/json')
-        print(response)
         assert status.is_success(response.status_code)
 
     def test_get_accounts_device_list(self):
