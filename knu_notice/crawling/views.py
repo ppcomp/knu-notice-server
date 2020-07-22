@@ -41,7 +41,7 @@ class BoardsList(generics.ListAPIView):
         queryset = models.Notice.objects.all()
         boards = self.request.query_params.get('q', None)
         if boards:
-            board_set = set(boards.split('+'))
+            board_set = set(boards.split())
             queryset = queryset.filter(site__in=board_set)
         return queryset
 
