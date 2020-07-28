@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from .models import Device, User
-from .serializer import DeviceSerializer, UserSerializer
+from . import serializer
 
 def get_object(model, pk):
     try:
@@ -29,7 +29,7 @@ class DeviceList(mixins.ListModelMixin,
                  mixins.UpdateModelMixin,
                  generics.GenericAPIView):
     queryset = Device.objects.all()
-    serializer_class = DeviceSerializer
+    serializer_class = serializer.DeviceSerializer
 
     # permission_classes = [IsAdminUser,] # 활성화시 admin 계정만 접근 가능
     # authentication_classes = [JSONWebTokenAuthentication,] # 활성화시 admin 계정만 접근 가능
@@ -75,14 +75,17 @@ class Account(generics.GenericAPIView):
 
 class DeviceView(Account):
 
-    serializer_class = DeviceSerializer
+    serializer_class = serializer.DeviceSerializer
     model = Device
 
 
 class UserView(Account):
 
-    serializer_class = UserSerializer
+    serializer_class = serializer.UserFormSerializer
     model = User
+
+    def get_serializer(self, *args, **kwargs):
+        return serializer.UserSerializer(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         json_data = get_json_data(request)
