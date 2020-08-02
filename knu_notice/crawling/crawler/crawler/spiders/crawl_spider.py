@@ -2,6 +2,7 @@
 from typing import Dict, List, Tuple
 import datetime
 import re
+import zlib
 
 import scrapy
 from crawling.data import data
@@ -48,7 +49,7 @@ class DefaultSpider(scrapy.Spider):
     def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
-        self.is_fixed = args['is_fixed'] if 'is_fixed' in args.keys() else None
+        self.is_fixed = args['is_fixed']
         self.url_xpath = args['url_xpath']
         self.titles_xpath = args['titles_xpath']
         self.dates_xpath = args['dates_xpath']
@@ -71,12 +72,15 @@ class DefaultSpider(scrapy.Spider):
         for link in links:
             urls.append(link.url+'&')
         for url in urls:
-            print(url)
             idx = url.find(self.id)+len(self.id)+1
             for i in range(idx, len(url)):
                 if url[i] == "&":
                     break
-            ids.append(f'{self.name}-{url[idx:i]}')
+            id = url[idx:i]
+            if len(id) > 20:
+                seed = id.encode('utf-8')
+                id = zlib.adler32(seed)
+            ids.append(f'{self.name}-{id}')
         return ids, urls
 
     # date 형식에 맞게 조정
@@ -98,13 +102,13 @@ class DefaultSpider(scrapy.Spider):
             if d.find(':') != -1:
                 fix2.append(today_format)
             elif type1.match(d):                                    # 05-19
-                # try:
-                #     tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
-                #     tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
-                #     tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
-                # except:
-                #     tmp = None
-                fix2.append(None)
+                try:
+                    tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
+                    tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
+                    tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                except:
+                    tmp = None
+                fix2.append(tmp)
             elif type2.match(d):                                    # 20-05-19
                 try:
                     tmp = datetime.datetime.strptime(d, "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
@@ -204,12 +208,12 @@ class {key.capitalize()}Spider(DefaultSpider):
 
         self.name = args['name']
         if args['page']:
-            url:str = args['start_urls'][0]
+            url:str = args['start_urls']
             url_page = url + '&' + args['page'] + '=%d'
             urls = [url_page % i for i in range(1, page_num+1)]
             self.start_urls = urls
         else:
-            self.start_urls = args['start_urls']
+            self.start_urls = [args['start_urls']]
 
         super().__init__()
         super().set_args(args)
