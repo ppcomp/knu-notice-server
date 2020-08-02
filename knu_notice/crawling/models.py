@@ -8,7 +8,7 @@ class Notice(models.Model):
     site = models.CharField(max_length=30)
     is_fixed = models.BooleanField(default=False)
     title = models.CharField(max_length=100)
-    link = models.CharField(max_length=200)
+    link = models.CharField(max_length=500)
     date = models.DateField(null=True)
     author = models.CharField(max_length=30, null=True)
     reference = models.CharField(max_length=50, null=True)

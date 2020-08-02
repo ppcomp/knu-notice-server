@@ -8,6 +8,7 @@ django-sslserver==0.22
 drf-yasg==1.17.0
 gunicorn==20.0.4
 model_mommy==1.5.1
+pandas==1.1.0
 psycopg2==2.8.5
 pytest-django==3.8.0
 pytest-xdist==1.32.0
