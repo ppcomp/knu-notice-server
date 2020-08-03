@@ -21,5 +21,6 @@ urlpatterns = [
     path(r'list', views.get_board_list, name='get_board_list'),
     path(r'all', views.BoardsList.as_view(), name='get_board_all'),
     path('init/<int:pages>', views.init, name='init'),
+    path('init/<board>/<int:pages>', views.init, name='init'),
     re_path(r'^(?P<board>\w+)$', views.get_board, name='get_board'),
 ]
