@@ -16,7 +16,8 @@ from .crawler.crawler.spiders import crawl_spider
 @permission_classes([IsAdminUser])
 def init(request, pages):
     from crawling import tasks
-    tasks.crawling.apply_async((pages,), expires=3600)
+    for i in range(len(tasks.spiders)):
+        tasks.crawling.apply_async((pages, i), expires=3600)
     return Response(
         "Database initialized. All board notices are crawled.", 
         status=status.HTTP_200_OK

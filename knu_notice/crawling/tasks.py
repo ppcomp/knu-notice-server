@@ -141,14 +141,18 @@ def crawling_start(scrapy_settings: Settings, spiders: List[object]) -> List[Dic
     return stats_dic_list
 
 @app.task
-def crawling(page_num):
+def crawling(page_num, spider_idx=-1):
+    if spider_idx == -1:
+        spider_arg = spiders
+    else:
+        spider_arg = [spiders[spider_idx]]
     scrapy_settings = get_scrapy_settings()
     crawl_spider.page_num = page_num
     proc = Process(
         target=crawling_start, 
         args=(
             scrapy_settings,
-            spiders,
+            spider_arg,
         )
     )
     proc.start()
