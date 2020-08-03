@@ -83,7 +83,7 @@ spiders = [
     crawl_spider.ForestSpider,
     crawl_spider.FmSpider,
     # crawl_spider.ForestrySpider,
-    crawl_spider.FepSpider,
+    # crawl_spider.FepSpider,
     crawl_spider.WoodSpider,
     # crawl_spider.PaperSpider,
     crawl_spider.LandsSpider,
