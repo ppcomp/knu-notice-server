@@ -6,14 +6,6 @@ DEBUG = False
 
 WSGI_APPLICATION = 'knu_notice.prod.wsgi.application'
 
-CELERY_BEAT_SCHEDULE = {
-    ## crawling 중지 상태
-    # 'hello': {
-    #     'task': 'crawling.tasks.crawling',
-    #     'schedule': timedelta(seconds=21600)
-    # }
-}
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

@@ -17,7 +17,7 @@ from .crawler.crawler.spiders import crawl_spider
 def init(request, pages):
     from crawling import tasks
     for i in range(len(tasks.spiders)):
-        tasks.crawling.apply_async((pages, i), expires=3600)
+        tasks.crawling.apply_async(args=(pages, i), queue='slow_tasks')
     return Response(
         "Database initialized. All board notices are crawled.", 
         status=status.HTTP_200_OK

@@ -21,7 +21,7 @@ services:
             python manage_dev.py collectstatic --no-input &&
             python manage_dev.py makemigrations && 
             python manage_dev.py migrate &&
-            gunicorn knu_notice.dev.wsgi -b 0:8080 -e DEV=True"
+            gunicorn knu_notice.dev.wsgi -b 0:8080"
         volumes:
             - ./knu_notice:/home/knu_notice
         links:
@@ -30,7 +30,7 @@ services:
     celery:
         build: .
         container_name: celery01
-        command: celery worker --app=crawling.tasks --pidfile=
+        command: celery worker --app=crawling.tasks -Q slow_tasks --pidfile=
         volumes:
             - ./knu_notice:/home/knu_notice
         depends_on:
@@ -40,7 +40,7 @@ services:
     celery-beat:
         build: .
         container_name: celery-beat01
-        command: celery beat --app=crawling.tasks --pidfile=
+        command: celery beat --app=crawling.tasks -Q slow_tasks --pidfile=
         volumes:
             - ./knu_notice:/home/knu_notice
         depends_on:
