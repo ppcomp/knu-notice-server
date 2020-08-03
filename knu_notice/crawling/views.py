@@ -14,13 +14,27 @@ from .crawler.crawler.spiders import crawl_spider
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
-def init(request, pages):
+def init(request, *arg, **kwarg):
+    msg = "Database will be initialized. All board notices are being crawled."
+    code = status.HTTP_200_OK
     from crawling import tasks
-    for i in range(len(tasks.spiders)):
-        tasks.crawling.apply_async(args=(pages, i), queue='slow_tasks')
+    if 'board' in kwarg.keys():
+        board = f"{kwarg['board'].capitalize()}Spider"
+        is_crawled = False
+        for i in range(len(tasks.spiders)):
+            if tasks.spiders[i].__name__ == board:
+                tasks.crawling.apply_async(args=(kwarg['pages'], i), queue='slow_tasks')
+                is_crawled = True
+                break
+        if not is_crawled:
+            msg = "Invalid board name. Request with correct board name to initialize Database."
+            code = status.HTTP_400_BAD_REQUEST
+    else:
+        for i in range(len(tasks.spiders)):
+            tasks.crawling.apply_async(args=(kwarg['pages'], i), queue='slow_tasks')
     return Response(
-        "Database initialized. All board notices are crawled.", 
-        status=status.HTTP_200_OK
+        data=msg, 
+        status=code
     )
 
 @api_view(['GET'])
