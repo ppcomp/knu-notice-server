@@ -40,7 +40,7 @@ services:
     celery-beat:
         build: .
         container_name: celery-beat01
-        command: celery beat --app=crawling.tasks -Q slow_tasks --pidfile=
+        command: celery beat --app=crawling.tasks --pidfile=
         volumes:
             - ./knu_notice:/home/knu_notice
         depends_on:
