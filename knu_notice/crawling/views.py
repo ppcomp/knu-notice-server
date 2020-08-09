@@ -11,7 +11,7 @@ from operator import attrgetter
 
 from . import models
 from .data import data
-from .serializer import NoticeSerializer
+from .serializer import NoticeSerializer, NoticeSearchSerializer
 from .crawler.crawler.spiders import crawl_spider
 
 @api_view(['GET'])
@@ -63,22 +63,20 @@ class BoardsList(generics.ListAPIView):
         return queryset
 
 class SearchList(generics.ListAPIView):
-    serializer_class = NoticeSerializer
+    serializer_class = NoticeSearchSerializer
 
     def get_queryset(self):
         qeurys = self.request.query_params.get('q', None)
         if qeurys:
             query = SearchQuery(qeurys)
-            # Bug: "operator does not exist: text = tsquery"
-            # search_headline = SearchHeadline(
-            #     'title',
-            #     query,
-            #     start_sel='<strong>',
-            #     stop_sel='</strong>',
-            # )
             notice_queryset = models.Notice.objects.annotate(
-                search=SearchVector('title'),
-            ).filter(search=query)
+                bold_title=SearchHeadline(
+                    'title',
+                    query,
+                    start_sel='<strong>',
+                    stop_sel='</strong>',
+                )
+            ).filter(bold_title__contains='<strong>')
         else:
             notice_queryset = QuerySet()
         return notice_queryset
