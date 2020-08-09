@@ -124,21 +124,15 @@ def get_scrapy_settings():
     scrapy_settings.setmodule(settings_module_path, priority='project')
     return scrapy_settings
 
-def crawling_start(scrapy_settings: Settings, spiders: List[object]) -> List[Dict]:
+def crawling_start(scrapy_settings: Settings, spider: object) -> Dict:
     process = CrawlerProcess(scrapy_settings)
-    crawler_list = []
-    for spider in spiders:
-        crawler = process.create_crawler(spider)
-        crawler_list.append(crawler)
-        process.crawl(crawler)
+    crawler = process.create_crawler(spider)
+    process.crawl(crawler)
     process.start()
 
-    stats_dic_list = []
-    for crawler in crawler_list:
-        # stats = crawler.stats   # <class 'scrapy.statscollectors.MemoryStatsCollector'>
-        stats = crawler.stats.get_stats()   # <class 'dict'>
-        stats_dic_list.append(stats)
-    return stats_dic_list
+    # stats = crawler.stats   # <class 'scrapy.statscollectors.MemoryStatsCollector'>
+    stats = crawler.stats.get_stats()   # <class 'dict'>
+    return stats
 
 @app.task
 def crawling(page_num, spider_idx=-1):
@@ -148,12 +142,16 @@ def crawling(page_num, spider_idx=-1):
         spider_arg = [spiders[spider_idx]]
     scrapy_settings = get_scrapy_settings()
     crawl_spider.page_num = page_num
-    proc = Process(
-        target=crawling_start, 
-        args=(
-            scrapy_settings,
-            spider_arg,
+    proc_list = []
+    for spider in spider_arg:
+        proc = Process(
+            target=crawling_start, 
+            args=(
+                scrapy_settings,
+                spider,
+            )
         )
-    )
-    proc.start()
-    proc.join()
+        proc.start()
+        proc_list.append(proc)
+    for proc in proc_list:
+        proc.join()

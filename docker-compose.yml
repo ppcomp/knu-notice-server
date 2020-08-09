@@ -30,7 +30,7 @@ services:
     celery:
         build: .
         container_name: celery01
-        command: celery worker --app=crawling.tasks -Q slow_tasks --pidfile=
+        command: celery worker --app=crawling.tasks --pidfile=
         volumes:
             - ./knu_notice:/home/knu_notice
         depends_on:

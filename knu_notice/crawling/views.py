@@ -1,3 +1,5 @@
+from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchVector
+from django.db.models.query import QuerySet
 from django.shortcuts import render
 from rest_framework import viewsets, status, generics
 from rest_framework.permissions import IsAdminUser
@@ -60,13 +62,23 @@ class BoardsList(generics.ListAPIView):
             queryset = queryset.filter(site__in=board_set)
         return queryset
 
-@api_view(['GET'])
-def get_board(request, board:str):
-    try:
-        board_title = board.title()
-        # ex) txt = models.main.objects.all()
-        txt = f"models.{board_title}.objects.all()"
-        serialized = NoticeSerializer(eval(txt), many=True)
-        return Response(serialized.data)
-    except:
-        raise NotFound(detail="Error 404, invalid board name", code=404)
+class SearchList(generics.ListAPIView):
+    serializer_class = NoticeSerializer
+
+    def get_queryset(self):
+        qeurys = self.request.query_params.get('q', None)
+        if qeurys:
+            query = SearchQuery(qeurys)
+            # Bug: "operator does not exist: text = tsquery"
+            # search_headline = SearchHeadline(
+            #     'title',
+            #     query,
+            #     start_sel='<strong>',
+            #     stop_sel='</strong>',
+            # )
+            notice_queryset = models.Notice.objects.annotate(
+                search=SearchVector('title'),
+            ).filter(search=query)
+        else:
+            notice_queryset = QuerySet()
+        return notice_queryset
