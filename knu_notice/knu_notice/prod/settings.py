@@ -1,6 +1,16 @@
 # dev/settings 로부터 재정의
 
+import json
+
 from knu_notice.dev.settings import *
+
+def get_secret(setting):
+    with open('knu_notice/secret.json', 'r') as f:
+        secret = json.loads(f.read())
+    return secret[setting]
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = get_secret('DJANGO_SECRET_KEY')
 
 DEBUG = False
 
@@ -33,5 +43,18 @@ LOGGING = {
             'handlers': ['file_celery', 'console_celery'],
             'level': 'DEBUG',
         },
+    }
+}
+
+# Database
+# https://docs.djangoproject.com/en/2.2/ref/settings/#databases
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': get_secret('DB_NAME'),
+        'USER': get_secret('DB_USER'),
+        'PASSWORD': get_secret('DB_PASSWORD'),
+        'HOST': get_secret('DB_HOST'),
+        'PORT': get_secret('DB_PORT'),
     }
 }

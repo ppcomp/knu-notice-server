@@ -12,11 +12,7 @@ class TestAll(TestCase):
         response = client.get('/notice/all?q=cse+main')
         assert status.is_success(response.status_code)
 
-class TestBoards(TestCase):
-    def test_get_notice_main(self):
-        response = client.get('/notice/main')
-        assert status.is_success(response.status_code)
-
-    def test_get_notice_cse(self):
-        response = client.get('/notice/cse')
+class TestSearch(TestCase):
+    def test_get_notice_search(self):
+        response = client.get('/notice/search?q=장학금')
         assert status.is_success(response.status_code)

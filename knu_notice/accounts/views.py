@@ -6,7 +6,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
-from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from .models import Device, User
 from . import serializer
 

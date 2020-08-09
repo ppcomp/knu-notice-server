@@ -1,11 +1,9 @@
 from __future__ import absolute_import, unicode_literals
-import os
 import logging
 from celery import Celery
 from celery.signals import setup_logging
 from kombu import Queue
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'knu_notice.dev.settings')
 app = Celery(
     'knu_notice',
     broker='redis://redis:6379/0',
