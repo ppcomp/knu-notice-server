@@ -5,7 +5,16 @@ jobs:
             image: ubuntu-1604:202004-01
         steps:
             - checkout
-            - run: docker-compose -f docker-compose.test.yml up
+            - run: docker-compose -f db.yml build
+            - run: docker-compose -f docker-compose.prod.yml build
+            - store_artifacts:
+                path: ~/repo/features/fail-screenshots
+    test:
+        machine:
+            image: ubuntu-1604:202004-01
+        steps:
+            - checkout
+            - run: docker-compose -f docker-compose.test.yml up --build
             - store_artifacts:
                 path: ~/repo/features/fail-screenshots
 
@@ -14,3 +23,4 @@ workflows:
         jobs:
         # 위에서 작성한 job명칭을 입력한다.
         - build
+        - test
