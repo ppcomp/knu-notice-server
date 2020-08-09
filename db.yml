@@ -17,8 +17,8 @@ services:
         ports:
             - "5432:5432"
         volumes:
-            - ./config/postgres-passwd.txt:/run/secrets/postgres-passwd.txt
+            - ./config/postgres-passwd:/run/secrets/postgres-passwd
         environment:
             - POSTGRES_DB=postgres
             - POSTGRES_USER=postgres
-            - POSTGRES_PASSWORD_FILE=/run/secrets/postgres-passwd.txt
+            - POSTGRES_PASSWORD_FILE=/run/secrets/postgres-passwd

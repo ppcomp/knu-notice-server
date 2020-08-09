@@ -84,15 +84,12 @@ class UserView(Account):
     serializer_class = serializer.UserFormSerializer
     model = User
 
-    def get_serializer(self, *args, **kwargs):
-        return serializer.UserSerializer(*args, **kwargs)
-
     def post(self, request, *args, **kwargs):
         json_data = get_json_data(request)
         device = get_object(Device, str(json_data['device_id']))
         json_data['device'] = device
-        serializer = self.get_serializer(data=json_data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user_serializer = serializer.UserSerializer(data=json_data)
+        if user_serializer.is_valid():
+            user_serializer.save()
+            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
