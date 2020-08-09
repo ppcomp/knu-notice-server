@@ -10,6 +10,7 @@ class NoticeSerializer(serializers.ModelSerializer):
             'link',
             'date',
             'author',
-            'reference'
+            'reference',
+            'is_fixed',
         )
         read_only = ('id')
