@@ -67,16 +67,22 @@ class SearchList(generics.ListAPIView):
 
     def get_queryset(self):
         qeurys = self.request.query_params.get('q', None)
+        target = self.request.query_params.get('target', None)
+        queryset = models.Notice.objects.all()
+        if target and target != 'all':
+            board_set = set(target.split())
+            queryset = queryset.filter(site__in=board_set)
+
         if qeurys:
             query = SearchQuery(qeurys)
-            notice_queryset = models.Notice.objects.annotate(
+            notice_queryset = queryset.annotate(
                 bold_title=SearchHeadline(
                     'title',
                     query,
-                    start_sel='<strong>',
-                    stop_sel='</strong>',
+                    start_sel='<u><strong>',
+                    stop_sel='</strong></u>',
                 )
-            ).filter(bold_title__contains='<strong>')
+            ).filter(bold_title__contains='<u><strong>')
         else:
             notice_queryset = QuerySet()
         return notice_queryset
