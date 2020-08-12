@@ -1,21 +1,5 @@
 # knu-notice-server
 
-```
-Python
-Django
-VisualStudioCode
-```
+Readme는 아래 링크에 있습니다.
 
-## Deploy settings
-1. Create `secret.json` file to `knu_notice/config`.
-
-2. Change `os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')` to `os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.production')` from
-```
-knu-notice/manage.py
-knu-notice/settings/wsgi.py
-```
-
-3. Change `localhost` to `server ip addr` from
-```
-config/nginx/nginx.conf
-```
+https://www.notion.so/b3197a4f4e5f40ecacfdbd5a1501ec79
