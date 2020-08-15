@@ -1,10 +1,16 @@
 import os, sys, json
 from django.core.exceptions import ImproperlyConfigured
+import firebase_admin
 
 def get_secret(setting):
     with open('resources/secret_dev.json', 'r') as f:
         secret = json.loads(f.read())
     return secret[setting]
+
+# Firebase FCM SDK
+cred = firebase_admin.credentials.Certificate('resources/firebase-adminsdk.json')
+default_app = firebase_admin.initialize_app(cred)
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

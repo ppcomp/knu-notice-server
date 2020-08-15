@@ -49,9 +49,6 @@ def push(request, *arg, **kwarg):
     msg = "Push success."
     code = status.HTTP_200_OK
 
-    cred = firebase_admin.credentials.Certificate('resources/firebase-adminsdk.json')
-    default_app = firebase_admin.initialize_app(cred)
-
     registration_tokens = list(accounts_models.Device.objects
         .all()
         .filter()
