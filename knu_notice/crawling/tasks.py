@@ -7,6 +7,7 @@ from typing import List, Tuple, Dict, TYPE_CHECKING
 
 # from django.conf import settings
 from knu_notice.celery import app
+from .crawler.crawler.spiders import crawl_spider
 
 import scrapy
 from twisted.internet import reactor
@@ -160,6 +161,7 @@ def crawling(page_num, spider_idx=-1):
 
 @app.task
 def cron_crawling(page_num, spider_idx=-1):
+    from . import models
     fixed_notices = models.Notice.objects.all.filter(is_fixed=True)
     fixed_notices.update(ix_fixed=False)
     crawling(page_num, spider_idx=-1)
