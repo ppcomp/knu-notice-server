@@ -28,4 +28,7 @@ class CrawlerPipeline:
         #created = False: DB에 저장된 같은 데이터가 있음 (Get)
         if created:
             print(f"new Data insert! {item['model']}:{item['title']}")
+        else:
+            if notice.is_fixed != item['is_fixed']:
+                notice.is_fixed = item['is_fixed']
         return item

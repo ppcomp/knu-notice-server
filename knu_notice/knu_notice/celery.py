@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 import logging
 from celery import Celery
+from celery.schedules import crontab, timedelta
 from celery.signals import setup_logging
 from kombu import Queue
 
@@ -10,10 +11,10 @@ app = Celery(
     backend='redis://redis:6379/0',
 )
 app.conf.beat_schedule = {
-    # 'crawling': {
+    # 'cron_crawling': {
     #     'task': 'crawling.tasks.crawling',
     #     'schedule': timedelta(seconds=600),
-    #     'args': (1,)
+    #     'args': (1,-1),
     # }
 }
 app.conf.task_default_queue = 'default'
