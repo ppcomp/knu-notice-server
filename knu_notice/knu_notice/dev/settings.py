@@ -1,5 +1,4 @@
 import os, sys, json
-from celery.schedules import crontab, timedelta
 from django.core.exceptions import ImproperlyConfigured
 
 def get_secret(setting):
