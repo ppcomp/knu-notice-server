@@ -145,7 +145,8 @@ class CustomCrawler:
         return stats
 
 def call_push_alarm(
-    board_created_list: Set[str]=set(),
+    target_board_list: List[str]=[],
+    target_device_list: List[str]=[],
     data=dict(),
     title='새 공지가 추가되었습니다.',
     body='지금 어플을 열어 확인해 보세요!') -> Tuple[str,str]:
@@ -154,15 +155,19 @@ def call_push_alarm(
     msg = "Push success."
     code = status.HTTP_200_OK
 
-    registration_tokens = set()
-    for board_code in board_created_list:
-        tokens = list(accounts_models.Device.objects
-            .all()
-            .filter(subscriptions__contains=board_code)
-            .values_list('id', flat=True)
-        )
-        registration_tokens.update(tokens)
-    registration_tokens = list(registration_tokens)
+    registration_tokens = []
+    if len(target_device_list) != 0:
+        registration_tokens = target_device_list
+    else:
+        token_set = set()
+        for board_code in target_board_list:
+            tokens = list(accounts_models.Device.objects
+                .all()
+                .filter(subscriptions__contains=board_code)
+                .values_list('id', flat=True)
+            )
+            token_set.update(tokens)
+        registration_tokens = list(token_set)
 
     message = messaging.MulticastMessage(
         data=data,
@@ -187,15 +192,14 @@ def call_push_alarm(
             if not resp.success:
                 # The order of responses corresponds to the order of the registration tokens.
                 failed_tokens.append(registration_tokens[idx])
-        code = status.HTTP_400_BAD_REQUEST
         msg = f'List of tokens that caused failures: {failed_tokens}'
         print(msg)
 
     return msg, code
 
-def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> Set[str]:
+def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
     from . import models
-    board_created_list = set()
+    target_board_set = set()
     for board_code, item_list in boards_data.items():
         model = eval(f"models.{board_code.capitalize()}")
         for item in item_list:
@@ -214,12 +218,12 @@ def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> Set[str]:
             #created = True: DB에 저장된 같은 데이터가 없음 (Create)
             #created = False: DB에 저장된 같은 데이터가 있음 (Get)
             if created:
-                board_created_list.add(item['site'])
+                target_board_set.add(item['site'])
                 print(f"new Data insert! {item['site']}:{item['title']}")
             else:
                 if notice.is_fixed != item['is_fixed']:
                     notice.is_fixed = item['is_fixed']
-    return board_created_list
+    return list(target_board_set)
 
 def get_scrapy_settings() -> Settings:
     scrapy_settings = Settings()
@@ -271,6 +275,6 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
                 if c[1]:
                     result_dic.update(c[1])
     
-    board_created_list = save_data_to_db(result_dic)
+    target_board_list = save_data_to_db(result_dic)
 
-    call_push_alarm(board_created_list)
+    call_push_alarm(target_board_list)

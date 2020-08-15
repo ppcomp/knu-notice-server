@@ -10,6 +10,7 @@ from rest_framework.exceptions import NotFound
 from itertools import chain
 from operator import attrgetter
 
+from accounts import models as accounts_models
 from . import models
 from .crawler.crawler.spiders import crawl_spider
 from .data import data
@@ -44,8 +45,18 @@ def init(request, *arg, **kwarg):
 @permission_classes([IsAdminUser])
 def push(request, *arg, **kwarg):
     from crawling import tasks
-    push_target_boards = set(request.query_params.get('target', None).split())
-    msg, code = tasks.call_push_alarm(push_target_boards)
+    targets = request.query_params.get('target', None)
+    if targets=='broadcast':
+        target_device_list = list(accounts_models.Device.objects.all())
+        msg, code = tasks.call_push_alarm(target_device_list=target_device_list)
+    else:
+        if targets=='all':
+            target_board_list = list(models.Notice.objects.all())
+        elif targets:
+            target_board_list = targets.split()
+        else:
+            target_board_list = []
+        msg, code = tasks.call_push_alarm(target_board_list=target_board_list)
     return Response(
         data=msg, 
         status=code

@@ -66,7 +66,7 @@ class Device(models.Model):
     class Meta:
         ordering = ['-created_at']
     id = models.CharField(max_length=200, primary_key=True)
-    id_method = models.CharField(max_length=30, default='guid', blank=True)
+    id_method = models.CharField(max_length=30, default='InstanceId', blank=True)
     keywords = models.CharField(max_length=500, blank=True)
     subscriptions = models.CharField(max_length=500, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
