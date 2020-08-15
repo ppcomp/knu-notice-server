@@ -1,6 +1,10 @@
 from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchVector
 from django.db.models.query import QuerySet
 from django.shortcuts import render
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import messaging
+from firebase_admin import datetime
 from rest_framework import viewsets, status, generics
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -9,10 +13,11 @@ from rest_framework.exceptions import NotFound
 from itertools import chain
 from operator import attrgetter
 
+from accounts import models as accounts_models
 from . import models
+from .crawler.crawler.spiders import crawl_spider
 from .data import data
 from .serializer import NoticeSerializer, NoticeSearchSerializer
-from .crawler.crawler.spiders import crawl_spider
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
@@ -34,6 +39,48 @@ def init(request, *arg, **kwarg):
     else:
         for i in range(len(tasks.spiders)):
             tasks.crawling.apply_async(args=(kwarg['pages'], i), queue='slow_tasks')
+    return Response(
+        data=msg, 
+        status=code
+    )
+
+@api_view(['GET'])
+def push(request, *arg, **kwarg):
+    msg = "Push success."
+    code = status.HTTP_200_OK
+
+    registration_tokens = list(accounts_models.Device.objects
+        .all()
+        .filter()
+        .values_list('id', flat=True)
+    )
+
+    message = messaging.MulticastMessage(
+        data={'score': '850', 'time': '2:45'},
+        tokens=registration_tokens,
+        android=messaging.AndroidConfig(
+            priority='normal',
+            notification=messaging.AndroidNotification(
+                title='테스트 타이틀',
+                body='테스트 바디',
+                icon='',
+                color='#f45342',
+                sound='default' # 이거 없으면 백그라운드 수신시 소리, 진동, 화면켜짐 x
+            ),
+        ),
+    )
+    response = messaging.send_multicast(message)
+
+    if response.failure_count > 0:
+        responses = response.responses
+        failed_tokens = []
+        for idx, resp in enumerate(responses):
+            if not resp.success:
+                # The order of responses corresponds to the order of the registration tokens.
+                failed_tokens.append(registration_tokens[idx])
+        code = status.HTTP_400_BAD_REQUEST
+        msg = f'List of tokens that caused failures: {failed_tokens}'
+
     return Response(
         data=msg, 
         status=code

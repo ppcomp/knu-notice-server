@@ -7,14 +7,16 @@ from typing import List, Tuple, Dict, TYPE_CHECKING
 
 # from django.conf import settings
 from knu_notice.celery import app
+from .crawler.crawler.spiders import crawl_spider
 
 import scrapy
 from twisted.internet import reactor
 from scrapy.crawler import CrawlerRunner
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.log import configure_logging
-from .crawler.crawler.spiders import crawl_spider
 from scrapy.settings import Settings
+
+from .crawler.crawler.spiders import crawl_spider
 
 spiders = [
     # crawl_spider에 게시판 크롤링 class 생성 후 이 곳에 추가.
@@ -155,3 +157,10 @@ def crawling(page_num, spider_idx=-1):
         proc_list.append(proc)
     for proc in proc_list:
         proc.join()
+
+@app.task
+def cron_crawling(page_num, spider_idx=-1):
+    from . import models
+    fixed_notices = models.Notice.objects.all.filter(is_fixed=True)
+    fixed_notices.update(ix_fixed=False)
+    crawling(page_num, spider_idx=-1)

@@ -23,4 +23,5 @@ urlpatterns = [
     path(r'search', views.SearchList.as_view(), name='get_board_search'),
     path('init/<int:pages>', views.init, name='init'),
     path('init/<board>/<int:pages>', views.init, name='init'),
+    path('push', views.push, name='push'),
 ]

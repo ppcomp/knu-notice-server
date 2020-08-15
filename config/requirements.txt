@@ -4,6 +4,7 @@ Django==3.1
 djangorestframework==3.11.0
 django-allauth==0.42.0
 drf-yasg==1.17.0
+firebase-admin==4.3.0
 gunicorn==20.0.4
 model_mommy==1.5.1
 pandas==1.1.0

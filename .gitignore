@@ -10,6 +10,7 @@ secret.json
 *.key
 postgres-passwd
 postgres-passwd.txt
+firebase-adminsdk.json
 
 ### Django ###
 *.log

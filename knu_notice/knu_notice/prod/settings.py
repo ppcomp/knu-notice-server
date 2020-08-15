@@ -5,7 +5,7 @@ import json
 from knu_notice.dev.settings import *
 
 def get_secret(setting):
-    with open('knu_notice/secret.json', 'r') as f:
+    with open('resources/secret.json', 'r') as f:
         secret = json.loads(f.read())
     return secret[setting]
 
