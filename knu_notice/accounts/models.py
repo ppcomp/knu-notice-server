@@ -63,6 +63,8 @@ class Profile(models.Model):
 class Device(models.Model):
     def __str__(self):
         return str(self.id)
+    class Meta:
+        ordering = ['-created_at']
     id = models.CharField(max_length=200, primary_key=True)
     id_method = models.CharField(max_length=30, default='guid', blank=True)
     keywords = models.CharField(max_length=500, blank=True)

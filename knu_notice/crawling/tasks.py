@@ -16,7 +16,6 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.utils.log import configure_logging
 from scrapy.settings import Settings
 
-from . import models
 from .crawler.crawler.spiders import crawl_spider
 
 spiders = [

@@ -44,55 +44,36 @@ def init(request, *arg, **kwarg):
         status=code
     )
 
-# @permission_classes([IsAdminUser])
 @api_view(['GET'])
 def push(request, *arg, **kwarg):
-    msg = "Database will be initialized. All board notices are being crawled."
+    msg = "Push success."
     code = status.HTTP_200_OK
 
-    registration_tokens = accounts_models.Device.objects.values_list('id', flat=True)
-    print("###########")
-    print(registration_tokens)
+    cred = firebase_admin.credentials.Certificate('resources/firebase-adminsdk.json')
+    default_app = firebase_admin.initialize_app(cred)
 
-    # See documentation on defining a message payload.
-    message = messaging.Message(
+    registration_tokens = list(accounts_models.Device.objects
+        .all()
+        .filter()
+        .values_list('id', flat=True)
+    )
+
+    message = messaging.MulticastMessage(
+        data={'score': '850', 'time': '2:45'},
+        tokens=registration_tokens,
         android=messaging.AndroidConfig(
-            ttl=datetime.timedelta(seconds=3600),
             priority='normal',
             notification=messaging.AndroidNotification(
-                title='알림인데',
-                body='백그라운드 자비 좀',
+                title='테스트 타이틀',
+                body='테스트 바디',
                 icon='',
                 color='#f45342',
                 sound='default' # 이거 없으면 백그라운드 수신시 소리, 진동, 화면켜짐 x
             ),
         ),
-        data={
-            'score': '850',
-            'time': '2:45',
-        },
-        webpush=messaging.WebpushConfig(
-            notification=messaging.WebpushNotification(
-                title='웹 알림',
-                body='여긴 어떨까',
-                icon='',
-            ),
-        ),
-        topic='topic'
-        #token=registration_token
-    )
-
-    # Send a message to the device corresponding to the provided
-    # registration token.
-    response = messaging.send(message)
-
-    #########################################################################
-
-    message = messaging.MulticastMessage(
-        data={'score': '850', 'time': '2:45'},
-        tokens=registration_tokens,
     )
     response = messaging.send_multicast(message)
+
     if response.failure_count > 0:
         responses = response.responses
         failed_tokens = []
@@ -100,39 +81,9 @@ def push(request, *arg, **kwarg):
             if not resp.success:
                 # The order of responses corresponds to the order of the registration tokens.
                 failed_tokens.append(registration_tokens[idx])
-        print('List of tokens that caused failures: {0}'.format(failed_tokens))
+        code = status.HTTP_400_BAD_REQUEST
+        msg = f'List of tokens that caused failures: {failed_tokens}'
 
-    #########################################################################
-
-    # messages = [
-    #     messaging.Message(
-    #         notification=messaging.Notification('Price drop', '5% off all electronics'),
-    #         token=registration_token,
-    #     ),
-    #     messaging.Message(
-    #         notification=messaging.Notification('Price drop', '2% off all books'),
-    #         topic='readers-club',
-    #     ),
-    # ]
-    # response = messaging.send_all(messages)
-
-    #########################################################################
-
-    # from crawling import tasks
-    # if 'board' in kwarg.keys():
-    #     board = f"{kwarg['board'].capitalize()}Spider"
-    #     is_crawled = False
-    #     for i in range(len(tasks.spiders)):
-    #         if tasks.spiders[i].__name__ == board:
-    #             tasks.crawling.apply_async(args=(kwarg['pages'], i), queue='slow_tasks')
-    #             is_crawled = True
-    #             break
-    #     if not is_crawled:
-    #         msg = "Invalid board name. Request with correct board name to initialize Database."
-    #         code = status.HTTP_400_BAD_REQUEST
-    # else:
-    #     for i in range(len(tasks.spiders)):
-    #         tasks.crawling.apply_async(args=(kwarg['pages'], i), queue='slow_tasks')
     return Response(
         data=msg, 
         status=code
