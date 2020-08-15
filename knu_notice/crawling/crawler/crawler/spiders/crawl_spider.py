@@ -169,6 +169,7 @@ class DefaultSpider(scrapy.Spider):
 
         ids, links = self.split_id_and_link(links)  # id, link 추출
         is_fixeds = self.extend_list(is_fixeds, len(ids)-len(is_fixeds))
+        sites = [self.model.lower() for _ in range(len(links))]
 
         self._data_verification({
             'model':self.model,
@@ -183,8 +184,8 @@ class DefaultSpider(scrapy.Spider):
 
         for id, is_fixed, title, link, date, author, reference in zip(
             ids, is_fixeds, titles, links, dates, authors, references):
-            scrapyed_info = {
-                'model' : self.model,
+            scraped_info = {
+                # 'model' : self.model,
                 'id' : id,
                 'site' : self.model.lower(),
                 'is_fixed' : is_fixed,
@@ -194,7 +195,12 @@ class DefaultSpider(scrapy.Spider):
                 'author' : author,
                 'reference' : reference,
             }
-            yield scrapyed_info
+            self.scraped_info_data.append(scraped_info)
+            # yield scraped_info
+
+    # Override close()
+    def close(self, spider, reason):
+        self.output_callback(self.scraped_info_data)
 
 page_num = 1
 # Spider Class 자동 생성
@@ -202,7 +208,7 @@ for key, item in data.items():
     if key.find('test') == -1:
         txt = f"""
 class {key.capitalize()}Spider(DefaultSpider):
-    def __init__(self):
+    def __init__(self, **kwargs):
         from crawling.data import data
         args = data['{key}']
 
@@ -215,7 +221,9 @@ class {key.capitalize()}Spider(DefaultSpider):
         else:
             self.start_urls = [args['start_urls']]
 
-        super().__init__()
+        self.output_callback = kwargs.get('args').get('callback')
+        self.scraped_info_data = []
+        super().__init__(**kwargs)
         super().set_args(args)
 """
         exec(compile(txt,"<string>","exec"))

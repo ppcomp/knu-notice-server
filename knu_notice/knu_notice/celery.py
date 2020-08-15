@@ -11,15 +11,16 @@ app = Celery(
     backend='redis://redis:6379/0',
 )
 app.conf.beat_schedule = {
-    # 'cron_crawling': {
+    # 'crawling_task': {
     #     'task': 'crawling.tasks.crawling',
     #     'schedule': timedelta(seconds=600),
-    #     'args': (1,-1),
+    #     'args': (1,-1,True),
     # }
 }
 app.conf.task_default_queue = 'default'
 app.conf.task_queues = (
-	Queue('slow_tasks', routing_key='slow.#'),
+	Queue('crawling_tasks', routing_key='crawling.#'),
+    Queue('single_crawling_tasks', routing_key='single_crawling.#'),
 	Queue('quick_tasks', routing_key='quick.#'),
 )
 

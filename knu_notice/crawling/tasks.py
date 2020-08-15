@@ -1,21 +1,22 @@
 from __future__ import absolute_import, unicode_literals
-import logging, os
+import logging, os, json
+
+from billiard import Manager
+from billiard.context import Process
 from celery import Celery
 from celery.schedules import crontab
-from billiard.context import Process
-from typing import List, Tuple, Dict, TYPE_CHECKING
-
-# from django.conf import settings
-from knu_notice.celery import app
-from .crawler.crawler.spiders import crawl_spider
-
+from celery.result import allow_join_result
+from firebase_admin import messaging
+from rest_framework import status
 import scrapy
-from twisted.internet import reactor
 from scrapy.crawler import CrawlerRunner
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.log import configure_logging
 from scrapy.settings import Settings
+from typing import List, Tuple, Set, Dict, TYPE_CHECKING
 
+# from django.conf import settings
+from knu_notice.celery import app
 from .crawler.crawler.spiders import crawl_spider
 
 spiders = [
@@ -119,48 +120,157 @@ spiders = [
     crawl_spider.LiberalSpider,
 ]
 
-def get_scrapy_settings():
+class CustomCrawler:
+
+    def __init__(self):
+        self.output = None
+
+    def _yield_output(self, data):
+        self.output = data
+
+    def crawling_start(
+            self,
+            scrapy_settings: Settings, 
+            spider: object, 
+            board_code: str,
+            return_dic: Dict) -> Dict:
+        process = CrawlerProcess(scrapy_settings)
+        crawler = process.create_crawler(spider)
+        process.crawl(crawler, args={'callback': self._yield_output})
+        process.start()
+        return_dic[board_code] = self.output
+
+        # stats = crawler.stats   # <class 'scrapy.statscollectors.MemoryStatsCollector'>
+        stats = crawler.stats.get_stats()   # <class 'dict'>
+        return stats
+
+def call_push_alarm(
+    board_created_list: Set[str]=set(),
+    data=dict(),
+    title='새 공지가 추가되었습니다.',
+    body='지금 어플을 열어 확인해 보세요!') -> Tuple[str,str]:
+    from accounts import models as accounts_models
+    
+    msg = "Push success."
+    code = status.HTTP_200_OK
+
+    registration_tokens = set()
+    for board_code in board_created_list:
+        tokens = list(accounts_models.Device.objects
+            .all()
+            .filter(subscriptions__contains=board_code)
+            .values_list('id', flat=True)
+        )
+        registration_tokens.update(tokens)
+    registration_tokens = list(registration_tokens)
+
+    message = messaging.MulticastMessage(
+        data=data,
+        tokens=registration_tokens,
+        android=messaging.AndroidConfig(
+            priority='normal',
+            notification=messaging.AndroidNotification(
+                title=title,
+                body=body,
+                icon='',
+                color='#f45342',
+                sound='default' # 이거 없으면 백그라운드 수신시 소리, 진동, 화면켜짐 x
+            ),
+        ),
+    )
+    response = messaging.send_multicast(message)
+
+    if response.failure_count > 0:
+        responses = response.responses
+        failed_tokens = []
+        for idx, resp in enumerate(responses):
+            if not resp.success:
+                # The order of responses corresponds to the order of the registration tokens.
+                failed_tokens.append(registration_tokens[idx])
+        code = status.HTTP_400_BAD_REQUEST
+        msg = f'List of tokens that caused failures: {failed_tokens}'
+        print(msg)
+
+    return msg, code
+
+def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> Set[str]:
+    from . import models
+    board_created_list = set()
+    for board_code, item_list in boards_data.items():
+        model = eval(f"models.{board_code.capitalize()}")
+        for item in item_list:
+            notice, created = model.objects.get_or_create(
+                id = item['id'],  # id만 일치하면 기존에 있던 데이터라고 판단.
+                defaults={
+                    'site':item['site'],
+                    'is_fixed':True if item['is_fixed'] and not item['is_fixed'].isdigit() else False,
+                    'title':item['title'],
+                    'link':item['link'],
+                    'date':item['date'],
+                    'author':item['author'],
+                    'reference':item['reference'],
+                }
+            )
+            #created = True: DB에 저장된 같은 데이터가 없음 (Create)
+            #created = False: DB에 저장된 같은 데이터가 있음 (Get)
+            if created:
+                board_created_list.add(item['site'])
+                print(f"new Data insert! {item['site']}:{item['title']}")
+            else:
+                if notice.is_fixed != item['is_fixed']:
+                    notice.is_fixed = item['is_fixed']
+    return board_created_list
+
+def get_scrapy_settings() -> Settings:
     scrapy_settings = Settings()
     os.environ['SCRAPY_SETTINGS_MODULE'] = 'crawling.crawler.crawler.settings'
     settings_module_path = os.environ['SCRAPY_SETTINGS_MODULE']
     scrapy_settings.setmodule(settings_module_path, priority='project')
     return scrapy_settings
 
-def crawling_start(scrapy_settings: Settings, spider: object) -> Dict:
-    process = CrawlerProcess(scrapy_settings)
-    crawler = process.create_crawler(spider)
-    process.crawl(crawler)
-    process.start()
-
-    # stats = crawler.stats   # <class 'scrapy.statscollectors.MemoryStatsCollector'>
-    stats = crawler.stats.get_stats()   # <class 'dict'>
-    return stats
-
 @app.task
-def crawling(page_num, spider_idx=-1):
-    if spider_idx == -1:
-        spider_arg = spiders
-    else:
-        spider_arg = [spiders[spider_idx]]
-    scrapy_settings = get_scrapy_settings()
+def _single_crawling_task(page_num, spider_idx):
+    spider = spiders[spider_idx]
     crawl_spider.page_num = page_num
-    proc_list = []
-    for spider in spider_arg:
-        proc = Process(
-            target=crawling_start, 
-            args=(
-                scrapy_settings,
-                spider,
-            )
+    manager = Manager()
+    return_dic = manager.dict()
+    cc = CustomCrawler()
+    proc = Process(
+        target=cc.crawling_start, 
+        args=(
+            get_scrapy_settings(),
+            spider,
+            spider.__name__[:spider.__name__.find('Spider')].lower(),
+            return_dic,
         )
-        proc.start()
-        proc_list.append(proc)
-    for proc in proc_list:
-        proc.join()
+    )
+    proc.start()
+    proc.join()
+    return dict(return_dic)
 
 @app.task
-def cron_crawling(page_num, spider_idx=-1):
-    from . import models
-    fixed_notices = models.Notice.objects.all.filter(is_fixed=True)
-    fixed_notices.update(ix_fixed=False)
-    crawling(page_num, spider_idx=-1)
+def crawling_task(page_num, spider_idx=-1, cron=False):
+    if cron:
+        from . import models
+        fixed_notices = models.Notice.objects.all.filter(is_fixed=True)
+        fixed_notices.update(ix_fixed=False)
+
+    res = []
+    result_dic = dict()
+    if spider_idx == -1:
+        for i in range(len(spiders)):
+            x = _single_crawling_task.apply_async(args=(page_num, i), queue='single_crawling_tasks')
+            res.append(x.collect())
+    else:
+        res = [_single_crawling_task.apply_async(args=(page_num, spider_idx), queue='single_crawling_tasks')]
+
+    result_dic = dict()
+    with allow_join_result():
+        for r in res:
+            for c in r:
+                if c[1]:
+                    result_dic.update(c[1])
+    
+    board_created_list = save_data_to_db(result_dic)
+
+    call_push_alarm(board_created_list)

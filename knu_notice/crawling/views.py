@@ -2,9 +2,6 @@ from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchVe
 from django.db.models.query import QuerySet
 from django.shortcuts import render
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import messaging
-from firebase_admin import datetime
 from rest_framework import viewsets, status, generics
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -13,7 +10,6 @@ from rest_framework.exceptions import NotFound
 from itertools import chain
 from operator import attrgetter
 
-from accounts import models as accounts_models
 from . import models
 from .crawler.crawler.spiders import crawl_spider
 from .data import data
@@ -30,57 +26,26 @@ def init(request, *arg, **kwarg):
         is_crawled = False
         for i in range(len(tasks.spiders)):
             if tasks.spiders[i].__name__ == board:
-                tasks.crawling.apply_async(args=(kwarg['pages'], i), queue='slow_tasks')
+                tasks.crawling_task.apply_async(args=(kwarg['pages'], i), queue='crawling_tasks')
                 is_crawled = True
                 break
         if not is_crawled:
             msg = "Invalid board name. Request with correct board name to initialize Database."
             code = status.HTTP_400_BAD_REQUEST
     else:
-        for i in range(len(tasks.spiders)):
-            tasks.crawling.apply_async(args=(kwarg['pages'], i), queue='slow_tasks')
+        tasks.crawling_task.apply_async(args=(kwarg['pages'], -1), queue='crawling_tasks')
+
     return Response(
         data=msg, 
         status=code
     )
 
 @api_view(['GET'])
+@permission_classes([IsAdminUser])
 def push(request, *arg, **kwarg):
-    msg = "Push success."
-    code = status.HTTP_200_OK
-
-    registration_tokens = list(accounts_models.Device.objects
-        .all()
-        .filter()
-        .values_list('id', flat=True)
-    )
-
-    message = messaging.MulticastMessage(
-        data={'score': '850', 'time': '2:45'},
-        tokens=registration_tokens,
-        android=messaging.AndroidConfig(
-            priority='normal',
-            notification=messaging.AndroidNotification(
-                title='테스트 타이틀',
-                body='테스트 바디',
-                icon='',
-                color='#f45342',
-                sound='default' # 이거 없으면 백그라운드 수신시 소리, 진동, 화면켜짐 x
-            ),
-        ),
-    )
-    response = messaging.send_multicast(message)
-
-    if response.failure_count > 0:
-        responses = response.responses
-        failed_tokens = []
-        for idx, resp in enumerate(responses):
-            if not resp.success:
-                # The order of responses corresponds to the order of the registration tokens.
-                failed_tokens.append(registration_tokens[idx])
-        code = status.HTTP_400_BAD_REQUEST
-        msg = f'List of tokens that caused failures: {failed_tokens}'
-
+    from crawling import tasks
+    push_target_boards = set(request.query_params.get('target', None).split())
+    msg, code = tasks.call_push_alarm(push_target_boards)
     return Response(
         data=msg, 
         status=code
