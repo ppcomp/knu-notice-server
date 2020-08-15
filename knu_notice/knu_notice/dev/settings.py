@@ -2,7 +2,7 @@ import os, sys, json
 from django.core.exceptions import ImproperlyConfigured
 
 def get_secret(setting):
-    with open('knu_notice/secret_dev.json', 'r') as f:
+    with open('resources/secret_dev.json', 'r') as f:
         secret = json.loads(f.read())
     return secret[setting]
 

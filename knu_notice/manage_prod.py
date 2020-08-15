@@ -16,6 +16,10 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
 
+    import firebase_admin
+    cred = firebase_admin.credentials.Certificate('resources/firebase-adminsdk.json')
+    default_app = firebase_admin.initialize_app(cred)
+
 
 if __name__ == '__main__':
     main()
