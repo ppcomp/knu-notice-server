@@ -12,7 +12,7 @@ app = Celery(
 )
 app.conf.beat_schedule = {
     # 'crawling_task': {
-    #     'task': 'crawling.tasks.crawling',
+    #     'task': 'crawling.tasks.crawling_task',
     #     'schedule': timedelta(seconds=600),
     #     'args': (1,-1,True),
     # }

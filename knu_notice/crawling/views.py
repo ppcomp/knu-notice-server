@@ -47,16 +47,15 @@ def push(request, *arg, **kwarg):
     from crawling import tasks
     targets = request.query_params.get('target', None)
     if targets=='broadcast':
-        target_device_list = list(accounts_models.Device.objects.all())
-        msg, code = tasks.call_push_alarm(target_device_list=target_device_list)
+        msg, code = tasks.call_push_alarm(is_broadcast=True)
     else:
         if targets=='all':
-            target_board_list = list(models.Notice.objects.all())
+            target_board_code_list = models.Notice.objects.all().values_list('site', flat=True)
         elif targets:
-            target_board_list = targets.split()
+            target_board_code_list = targets.split()
         else:
-            target_board_list = []
-        msg, code = tasks.call_push_alarm(target_board_list=target_board_list)
+            target_board_code_list = []
+        msg, code = tasks.call_push_alarm(target_board_code_list=target_board_code_list)
     return Response(
         data=msg, 
         status=code

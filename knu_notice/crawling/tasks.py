@@ -145,8 +145,8 @@ class CustomCrawler:
         return stats
 
 def call_push_alarm(
-    target_board_list: List[str]=[],
-    target_device_list: List[str]=[],
+    target_board_code_list: List[str]=[],
+    is_broadcast: bool=False,
     data=dict(),
     title='새 공지가 추가되었습니다.',
     body='지금 어플을 열어 확인해 보세요!') -> Tuple[str,str]:
@@ -156,50 +156,57 @@ def call_push_alarm(
     code = status.HTTP_200_OK
 
     registration_tokens = []
-    if len(target_device_list) != 0:
+    if is_broadcast:
+        target_device_list = list(accounts_models.Device.objects.all()
+            .filter(alarm_switch=True)
+            .values_list('id', flat=True)
+        )
         registration_tokens = target_device_list
     else:
         token_set = set()
-        for board_code in target_board_list:
+        for board_code in target_board_code_list:
             tokens = list(accounts_models.Device.objects
                 .all()
+                .exclude(alarm_switch=False)
                 .filter(subscriptions__contains=board_code)
                 .values_list('id', flat=True)
             )
             token_set.update(tokens)
         registration_tokens = list(token_set)
 
-    message = messaging.MulticastMessage(
-        data=data,
-        tokens=registration_tokens,
-        android=messaging.AndroidConfig(
-            priority='normal',
-            notification=messaging.AndroidNotification(
-                title=title,
-                body=body,
-                icon='',
-                color='#f45342',
-                sound='default' # 이거 없으면 백그라운드 수신시 소리, 진동, 화면켜짐 x
+    if len(registration_tokens) != 0:
+        message = messaging.MulticastMessage(
+            data=data,
+            tokens=registration_tokens,
+            android=messaging.AndroidConfig(
+                priority='normal',
+                notification=messaging.AndroidNotification(
+                    title=title,
+                    body=body,
+                    icon='',
+                    color='#f45342',
+                    sound='default' # 이거 없으면 백그라운드 수신시 소리, 진동, 화면켜짐 x
+                ),
             ),
-        ),
-    )
-    response = messaging.send_multicast(message)
+        )
+        response = messaging.send_multicast(message)
 
-    if response.failure_count > 0:
-        responses = response.responses
-        failed_tokens = []
-        for idx, resp in enumerate(responses):
-            if not resp.success:
-                # The order of responses corresponds to the order of the registration tokens.
-                failed_tokens.append(registration_tokens[idx])
-        msg = f'List of tokens that caused failures: {failed_tokens}'
-        print(msg)
-
+        if response.failure_count > 0:
+            responses = response.responses
+            failed_tokens = []
+            for idx, resp in enumerate(responses):
+                if not resp.success:
+                    # The order of responses corresponds to the order of the registration tokens.
+                    failed_tokens.append(registration_tokens[idx])
+            msg = f'List of tokens that caused failures: {failed_tokens}'
+            print(msg)
+    else:
+        msg = "There is no target devices."
     return msg, code
 
 def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
     from . import models
-    target_board_set = set()
+    target_board_code_set = set()
     for board_code, item_list in boards_data.items():
         model = eval(f"models.{board_code.capitalize()}")
         for item in item_list:
@@ -218,12 +225,12 @@ def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
             #created = True: DB에 저장된 같은 데이터가 없음 (Create)
             #created = False: DB에 저장된 같은 데이터가 있음 (Get)
             if created:
-                target_board_set.add(item['site'])
+                target_board_code_set.add(item['site'])
                 print(f"new Data insert! {item['site']}:{item['title']}")
             else:
                 if notice.is_fixed != item['is_fixed']:
                     notice.is_fixed = item['is_fixed']
-    return list(target_board_set)
+    return list(target_board_code_set)
 
 def get_scrapy_settings() -> Settings:
     scrapy_settings = Settings()
@@ -275,6 +282,6 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
                 if c[1]:
                     result_dic.update(c[1])
     
-    target_board_list = save_data_to_db(result_dic)
+    target_board_code_list = save_data_to_db(result_dic)
 
-    call_push_alarm(target_board_list)
+    call_push_alarm(target_board_code_list)
