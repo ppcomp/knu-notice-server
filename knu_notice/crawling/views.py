@@ -43,10 +43,10 @@ def init(request, *arg, **kwarg):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def push(request, *arg, **kwarg):
-    from crawling import tasks
+    from crawling.celery_tasks import crawling_task, spiders
     targets = request.query_params.get('target', None)
     if targets=='broadcast':
-        msg, code = tasks.call_push_alarm(is_broadcast=True)
+        msg, code = crawling_task.call_push_alarm(is_broadcast=True)
     else:
         if targets=='all':
             target_board_code_list = models.Notice.objects.all().values_list('site', flat=True)
@@ -54,7 +54,7 @@ def push(request, *arg, **kwarg):
             target_board_code_list = targets.split()
         else:
             target_board_code_list = []
-        msg, code = tasks.call_push_alarm(target_board_code_list=target_board_code_list)
+        msg, code = crawling_task.call_push_alarm(target_board_code_list=target_board_code_list)
     return Response(
         data=msg, 
         status=code
@@ -62,9 +62,9 @@ def push(request, *arg, **kwarg):
 
 @api_view(['GET'])
 def get_board_list(request):
-    from crawling import tasks
+    from crawling.celery_tasks import spiders
     ret = []
-    for spider in tasks.spiders:
+    for spider in spiders.spiders:
         code = spider.__name__[:spider.__name__.find('Spider')].lower()
         ret.append({
             'name':data[code]['name'],
