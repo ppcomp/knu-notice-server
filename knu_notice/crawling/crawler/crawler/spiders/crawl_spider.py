@@ -100,11 +100,12 @@ class DefaultSpider(scrapy.Spider):
 
         fix1 = []
         for date in dates:
-            d = date
-            if d:
-                d = d.replace('.','-')               # 2020.05.19 > 2020-05-19
+            if date:
+                d = date.replace('.','-')               # 2020.05.19 > 2020-05-19
                 d = d.replace('/','-')                  # 11:35 > 2020-05-19
-            fix1.append(d)
+                fix1.append(d)
+            else:
+                fix1.append(today_format)
 
         fix2 = []
         for d in fix1:
@@ -116,6 +117,8 @@ class DefaultSpider(scrapy.Spider):
                 try:
                     tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
                     tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
+                    if today_format < tmp:
+                        tmp = tmp.replace(year=today.year-1)
                     tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
                 except:
                     tmp = None
@@ -172,16 +175,16 @@ class DefaultSpider(scrapy.Spider):
             except:
                 references.append('')
 
+        titles, ids, links = self.split_id_and_link(links)  # id, link 추출
+        titles = self.remove_whitespace(titles)
         is_fixeds = self.remove_whitespace(is_fixeds)
         dates = self.remove_whitespace(dates)
         authors = self.remove_whitespace(authors)
         references = self.remove_whitespace(references)
 
         dates = self.date_cleanse(dates)        # date 형식에 맞게 조정
-        titles, ids, links = self.split_id_and_link(links)  # id, link 추출
         is_fixeds = self.extend_list(is_fixeds, len(ids)-len(is_fixeds))
         sites = [self.model.lower() for _ in range(len(links))]
-        print(len(is_fixeds), len(titles), len(dates), len(authors), len(references))
         self._data_verification({
             'model':self.model,
             'ids':ids, 
