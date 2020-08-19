@@ -9,13 +9,15 @@ app = Celery(
     'knu_notice',
     broker='redis://redis:6379/0',
     backend='redis://redis:6379/0',
+    include=['crawling.celery_tasks.crawling_task', 'crawling.celery_tasks.single_crawling_task']
 )
 app.conf.beat_schedule = {
-    # 'crawling_task': {
-    #     'task': 'crawling.tasks.crawling_task',
-    #     'schedule': timedelta(seconds=600),
-    #     'args': (1,-1,True),
-    # }
+    'crawling_task': {
+        'task': 'crawling.celery_tasks.crawling_task.crawling_task',
+        'schedule': timedelta(seconds=60),
+        'args': (1,0,True),
+        'options': {'queue' : 'crawling_tasks'},
+    }
 }
 app.conf.task_default_queue = 'default'
 app.conf.task_queues = (
