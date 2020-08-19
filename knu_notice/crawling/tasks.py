@@ -273,7 +273,7 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
             x = _single_crawling_task.apply_async(args=(page_num, i), queue='single_crawling_tasks')
             res.append(x.collect())
     else:
-        res = [_single_crawling_task.apply_async(args=(page_num, spider_idx), queue='single_crawling_tasks')]
+        res = [_single_crawling_task.apply_async(args=(page_num, spider_idx), queue='single_crawling_tasks').collect()]
 
     result_dic = dict()
     with allow_join_result():

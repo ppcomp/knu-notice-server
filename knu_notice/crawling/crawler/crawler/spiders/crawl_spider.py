@@ -24,24 +24,22 @@ class DefaultSpider(scrapy.Spider):
     def _data_verification(self, item: Dict[str, List]):
         from crawling import models
         when = f'While crawling {self.name}'
-        title_len = len(item['titles'])
+        link_len = len(item['links'])
 
         # model check
         eval(f"models.{item['model']}")
-        if title_len == 0:
+        if link_len == 0:
             # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
             raise Exception(f'{when}, Crawled item is empty! Check the xpaths or base url.')
         for key, value in item.items():
-            if key in ('id','link'):
-                if len(value) != title_len:
+            if key not in ('model'):
+                if len(value) != link_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
                     raise Exception(f"{when}, {key} size is not same with title's. ({key} size: {len(value)}, id size: {title_len})")
             if ((key == 'dates' and self.dates_xpath) or
                 (key == 'authors' and self.authors_xpath) or
                 (key == 'references' and self.references_xpath)):
                 # valid check. 크롤링된 데이터의 유효성 검증.
-                if value[0] is None:
-                    raise Exception(f'{when}, {key} is None.')
                 if value[0] == '':
                     raise Exception(f'{when}, {key} is empty. ("")')
 
@@ -49,28 +47,37 @@ class DefaultSpider(scrapy.Spider):
     def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
-        self.is_fixed = args['is_fixed']
         self.url_xpath = args['url_xpath']
-        self.titles_xpath = args['titles_xpath']
-        self.dates_xpath = args['dates_xpath']
-        self.authors_xpath = args['authors_xpath']
-        self.references_xpath = args['references_xpath']
+        is_fixed = args['is_fixed']
+        dates_xpath = args['dates_xpath']
+        authors_xpath = args['authors_xpath']
+        references_xpath = args['references_xpath']
+
+        self.tr_xpath = self.url_xpath[:self.url_xpath.rfind('tr')+2]
+        self.is_fixed = './'+is_fixed[is_fixed.rfind('td'):] if is_fixed else None
+        self.dates_xpath = './'+dates_xpath[dates_xpath.rfind('td'):] if dates_xpath else None
+        self.authors_xpath = './'+authors_xpath[authors_xpath.rfind('td'):] if authors_xpath else None
+        self.references_xpath = './'+references_xpath[references_xpath.rfind('td'):] if references_xpath else None
 
     # 공백 제거. 가장 선행되어야 하는 전처리
     def remove_whitespace(self, items: List[str]) -> List[str]:
         ret = []
         for item in items:
-            x = item.strip()
-            if x != '':
-                ret.append(x)
+            x = item
+            if x:
+                x = item.strip()
+                x = x.replace('<', '＜').replace('>', '＞') # ㄷ 한자(특수문자)
+            ret.append(x)
         return ret
 
     # Link 객체에서 url과 id 추출
     def split_id_and_link(self, links: List[str]) -> Tuple[List[str],List[str]]:
-        urls = []
+        titles = []
         ids = []
+        urls = []
         for link in links:
             urls.append(link.url+'&')
+            titles.append(link.text)
         for url in urls:
             idx = url.find(self.id)+len(self.id)+1
             for i in range(idx, len(url)):
@@ -81,7 +88,7 @@ class DefaultSpider(scrapy.Spider):
                 seed = id.encode('utf-8')
                 id = zlib.adler32(seed)
             ids.append(f'{self.name}-{id}')
-        return ids, urls
+        return titles, ids, urls
 
     # date 형식에 맞게 조정
     def date_cleanse(self, dates: List[str]) -> List[str]:
@@ -93,13 +100,17 @@ class DefaultSpider(scrapy.Spider):
 
         fix1 = []
         for date in dates:
-            d = date.replace('.','-')               # 2020.05.19 > 2020-05-19
-            d = d.replace('/','-')                  # 11:35 > 2020-05-19
+            d = date
+            if d:
+                d = d.replace('.','-')               # 2020.05.19 > 2020-05-19
+                d = d.replace('/','-')                  # 11:35 > 2020-05-19
             fix1.append(d)
 
         fix2 = []
         for d in fix1:
-            if d.find(':') != -1:
+            if not d:
+                fix2.append(d)
+            elif d.find(':') != -1:
                 fix2.append(today_format)
             elif type1.match(d):                                    # 05-19
                 try:
@@ -136,41 +147,41 @@ class DefaultSpider(scrapy.Spider):
             raise Exception('404 Page not foud! Check the base url.')
 
         url_forms = MyLinkExtractor(restrict_xpaths=self.url_xpath, attrs='href')
-        
         links: List[str] = url_forms.extract_links(response, omit=False)
+        tr_datas = response.xpath(self.tr_xpath)
+        is_fixeds = []
+        dates = []
+        authors = []
+        references = []
 
-        titles: List[str] = self.remove_whitespace(
-            response.xpath(self.titles_xpath).getall())
+        for tr, link in zip(tr_datas, links):
+            try:
+                is_fixeds.append(tr.xpath(self.is_fixed).get())
+            except:
+                is_fixeds.append('')
+            try:
+                dates.append(tr.xpath(self.dates_xpath).get())
+            except:
+                dates.append('')
+            try:
+                authors.append(tr.xpath(self.authors_xpath).get())
+            except:
+                authors.append('')
+            try:
+                references.append(tr.xpath(self.references_xpath).get())
+            except:
+                references.append('')
 
-        if self.is_fixed:
-            is_fixeds: List[str] = self.remove_whitespace(
-                response.xpath(self.is_fixed).getall())
-        else:
-            is_fixeds: List[None] = [None for _ in range(len(links))]
+        is_fixeds = self.remove_whitespace(is_fixeds)
+        dates = self.remove_whitespace(dates)
+        authors = self.remove_whitespace(authors)
+        references = self.remove_whitespace(references)
 
-        if self.dates_xpath:
-            dates: List[str] = self.remove_whitespace(
-                response.xpath(self.dates_xpath).getall())
-            dates = self.date_cleanse(dates)        # date 형식에 맞게 조정
-        else:
-            dates: List[None] = [None for _ in range(len(links))]
-
-        if self.authors_xpath:
-            authors: List[str] = self.remove_whitespace(
-                response.xpath(self.authors_xpath).getall())
-        else:
-            authors: List[None] = [None for _ in range(len(links))]
-
-        if self.references_xpath:
-            references: List[str] = self.remove_whitespace(
-                response.xpath(self.references_xpath).getall())
-        else:
-            references: List[None] = [None for _ in range(len(links))]
-
-        ids, links = self.split_id_and_link(links)  # id, link 추출
+        dates = self.date_cleanse(dates)        # date 형식에 맞게 조정
+        titles, ids, links = self.split_id_and_link(links)  # id, link 추출
         is_fixeds = self.extend_list(is_fixeds, len(ids)-len(is_fixeds))
         sites = [self.model.lower() for _ in range(len(links))]
-
+        print(len(is_fixeds), len(titles), len(dates), len(authors), len(references))
         self._data_verification({
             'model':self.model,
             'ids':ids, 
@@ -185,7 +196,6 @@ class DefaultSpider(scrapy.Spider):
         for id, is_fixed, title, link, date, author, reference in zip(
             ids, is_fixeds, titles, links, dates, authors, references):
             scraped_info = {
-                # 'model' : self.model,
                 'id' : id,
                 'site' : self.model.lower(),
                 'is_fixed' : is_fixed,
