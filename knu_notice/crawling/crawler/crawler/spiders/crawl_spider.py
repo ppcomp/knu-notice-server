@@ -105,7 +105,7 @@ class DefaultSpider(scrapy.Spider):
                 d = d.replace('/','-')                  # 11:35 > 2020-05-19
                 fix1.append(d)
             else:
-                fix1.append(today_format)
+                fix1.append(date)
 
         fix2 = []
         for d in fix1:
@@ -161,19 +161,19 @@ class DefaultSpider(scrapy.Spider):
             try:
                 is_fixeds.append(tr.xpath(self.is_fixed).get())
             except:
-                is_fixeds.append('')
+                is_fixeds.append(None)
             try:
                 dates.append(tr.xpath(self.dates_xpath).get())
             except:
-                dates.append('')
+                dates.append(None)
             try:
                 authors.append(tr.xpath(self.authors_xpath).get())
             except:
-                authors.append('')
+                authors.append(None)
             try:
                 references.append(tr.xpath(self.references_xpath).get())
             except:
-                references.append('')
+                references.append(None)
 
         titles, ids, links = self.split_id_and_link(links)  # id, link 추출
         titles = self.remove_whitespace(titles)
