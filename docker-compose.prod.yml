@@ -30,7 +30,7 @@ services:
     celery:
         build: .
         container_name: celery01
-        command: celery worker --app=crawling.tasks --pidfile=
+        command: celery worker --app=crawling.celery_tasks.crawling_task --pidfile=
         volumes:
             - ./knu_notice:/home/knu_notice
         depends_on:
@@ -40,7 +40,7 @@ services:
     celery-beat:
         build: .
         container_name: celery-beat01
-        command: celery beat --app=crawling.tasks --pidfile=
+        command: celery beat --app=crawling.celery_tasks.crawling_task --pidfile=
         volumes:
             - ./knu_notice:/home/knu_notice
         depends_on:
