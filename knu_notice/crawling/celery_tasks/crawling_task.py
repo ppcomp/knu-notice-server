@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 import logging, os, json
 from typing import List, Tuple, Set, Dict, TYPE_CHECKING
 
+from celery import group
 from celery.result import allow_join_result
 from firebase_admin import messaging
 from rest_framework import status
@@ -21,18 +22,16 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
     res = []
     result_dic = dict()
     if spider_idx == -1:
-        for i in range(len(spiders)):
-            x = single_crawling_task.apply_async(args=(page_num, i), queue='single_crawling_tasks')
-            res.append(x.collect())
+        job = group([single_crawling_task.s(page_num, i) for i in range(len(spiders))])
+        res = job.apply_async(queue='single_crawling_tasks')
     else:
-        res = [single_crawling_task.apply_async(args=(page_num, spider_idx), queue='single_crawling_tasks').collect()]
+        job = group([single_crawling_task.s(page_num, spider_idx),])
+        res = job.apply_async(queue='single_crawling_tasks')
 
-    result_dic = dict()
     with allow_join_result():
-        for r in res:
-            for c in r:
-                if c[1]:
-                    result_dic.update(c[1])
+        dic_list = res.get()
+        for dic in dic_list:
+            result_dic.update(dic)
     
     target_board_code_list = save_data_to_db(result_dic)
 

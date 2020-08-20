@@ -31,6 +31,8 @@ class User(AbstractBaseUser, PermissionsMixin):
             ret += f"[{self.profile.nickname}]"
         ret += str(self.id)
         return ret
+    class Meta:
+        ordering = ['-synched_at']
 
     objects = UserManager()
     USERNAME_FIELD = 'id'    
