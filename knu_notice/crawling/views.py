@@ -20,7 +20,7 @@ from .serializer import NoticeSerializer, NoticeSearchSerializer
 def init(request, *arg, **kwarg):
     msg = "Database will be initialized. All board notices are being crawled."
     code = status.HTTP_200_OK
-    from crawling.tasks import crawling_task, spiders
+    from crawling.celery_tasks import crawling_task, spiders
     if 'board' in kwarg.keys():
         board = f"{kwarg['board'].capitalize()}Spider"
         is_crawled = False
@@ -43,7 +43,7 @@ def init(request, *arg, **kwarg):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def push(request, *arg, **kwarg):
-    from crawling.tasks import crawling_task, spiders
+    from crawling.celery_tasks import crawling_task, spiders
     targets = request.query_params.get('target', None)
     if targets=='broadcast':
         msg, code = crawling_task.call_push_alarm(is_broadcast=True)
@@ -62,7 +62,7 @@ def push(request, *arg, **kwarg):
 
 @api_view(['GET'])
 def get_board_list(request):
-    from crawling.tasks import spiders
+    from crawling.celery_tasks import spiders
     ret = []
     for spider in spiders.spiders:
         code = spider.__name__[:spider.__name__.find('Spider')].lower()
