@@ -117,7 +117,7 @@ class DefaultSpider(scrapy.Spider):
                 try:
                     tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
                     tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
-                    if today_format < tmp:
+                    if today < tmp.date():
                         tmp = tmp.replace(year=today.year-1)
                     tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
                 except:
