@@ -1,6 +1,14 @@
 version: '3'
     
 services:
+    splash:
+        image: scrapinghub/splash:3.5.0
+        container_name: splash01
+        ports:
+            - "8050:8050"
+        logging:
+            driver: none
+
     nginx:
         image: nginx:1.17.10
         container_name: nginx01

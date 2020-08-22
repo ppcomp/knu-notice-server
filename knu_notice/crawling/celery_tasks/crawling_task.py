@@ -33,9 +33,9 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
         for dic in dic_list:
             result_dic.update(dic)
     
-    target_board_code_list = save_data_to_db(result_dic)
+    # target_board_code_list = save_data_to_db(result_dic)
 
-    call_push_alarm(target_board_code_list)
+    # call_push_alarm(target_board_code_list)
 
 def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
     from crawling import models

@@ -5,6 +5,8 @@ import re
 import zlib
 
 import scrapy
+from scrapy.linkextractors import LinkExtractor
+from scrapy_splash import SplashRequest
 from crawling.data import data
 from .LinkExtractor import MyLinkExtractor
 
@@ -35,7 +37,7 @@ class DefaultSpider(scrapy.Spider):
             if key not in ('model'):
                 if len(value) != link_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
-                    raise Exception(f"{when}, {key} size is not same with title's. ({key} size: {len(value)}, id size: {title_len})")
+                    raise Exception(f"{when}, {key} size is not same with title's. ({key} size: {len(value)}, id size: {link_len})")
             if ((key == 'dates' and self.dates_xpath) or
                 (key == 'authors' and self.authors_xpath) or
                 (key == 'references' and self.references_xpath)):
@@ -47,19 +49,27 @@ class DefaultSpider(scrapy.Spider):
     def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
-        self.url_xpath = args['url_xpath']
+        self.url_xpath = args['url_xpath'].replace('/nobr','')
         is_fixed = args['is_fixed']
         dates_xpath = args['dates_xpath']
         authors_xpath = args['authors_xpath']
         references_xpath = args['references_xpath']
 
-        self.tr_xpath = self.url_xpath[:self.url_xpath.rfind('tr')+2]
-        self.is_fixed = './'+is_fixed[is_fixed.rfind('td'):] if is_fixed else None
-        self.dates_xpath = './'+dates_xpath[dates_xpath.rfind('td'):] if dates_xpath else None
-        self.authors_xpath = './'+authors_xpath[authors_xpath.rfind('td'):] if authors_xpath else None
-        self.references_xpath = './'+references_xpath[references_xpath.rfind('td'):] if references_xpath else None
+        tag = 'tr/'
+        row_idx = self.url_xpath.rfind(tag)
+        if row_idx == -1:
+            tag = 'li/'
+            row_idx = self.url_xpath.rfind(tag)
+        self.child_url_xpath = './'+self.url_xpath[self.url_xpath.rfind(tag)+3:]
+        self.row_xpath = self.url_xpath[:row_idx+2].replace('/nobr','')
+        self.is_fixed = './'+is_fixed[is_fixed.rfind(tag)+3:].replace('/nobr','') if is_fixed else None
+        self.dates_xpath = './'+dates_xpath[dates_xpath.rfind(tag)+3:].replace('/nobr','') if dates_xpath else None
+        self.authors_xpath = './'+authors_xpath[authors_xpath.rfind(tag)+3:].replace('/nobr','') if authors_xpath else None
+        self.references_xpath = './'+references_xpath[references_xpath.rfind(tag)+3:].replace('/nobr','') if references_xpath else None
 
     # 공백 제거. 가장 선행되어야 하는 전처리
+    # How about use strip_html5_whitespace?
+    # https://w3lib.readthedocs.io/en/latest/w3lib.html#w3lib.html.strip_html5_whitespace
     def remove_whitespace(self, items: List[str]) -> List[str]:
         ret = []
         for item in items:
@@ -144,36 +154,53 @@ class DefaultSpider(scrapy.Spider):
         add = [None for i in range(target)]
         return arr + add
 
-    # Override parse()
-    def parse(self, response) -> Dict:
+    # Override
+    def start_requests(self):
+        for url in self.start_urls:
+            yield SplashRequest(url, self.parse,
+                endpoint='render.html',
+                args={'wait': 0.5},
+            )
+
+    # Override
+    def parse(self, response):
         if response.status == 404:
             raise Exception('404 Page not foud! Check the base url.')
 
-        url_forms = MyLinkExtractor(restrict_xpaths=self.url_xpath, attrs='href')
-        links: List[str] = url_forms.extract_links(response, omit=False)
-        tr_datas = response.xpath(self.tr_xpath)
+        links = []
+        # url_forms = MyLinkExtractor(restrict_xpaths=self.url_xpath, attrs='href')
+        # links: List[str] = url_forms.extract_links(response, omit=False)
+        row_datas = response.xpath(self.row_xpath)
         is_fixeds = []
         dates = []
         authors = []
         references = []
 
-        for tr, link in zip(tr_datas, links):
-            try:
-                is_fixeds.append(tr.xpath(self.is_fixed).get())
-            except:
-                is_fixeds.append(None)
-            try:
-                dates.append(tr.xpath(self.dates_xpath).get())
-            except:
-                dates.append(None)
-            try:
-                authors.append(tr.xpath(self.authors_xpath).get())
-            except:
-                authors.append(None)
-            try:
-                references.append(tr.xpath(self.references_xpath).get())
-            except:
-                references.append(None)
+        for row in row_datas:
+            if row.xpath(self.child_url_xpath):
+
+                ### How to get a link from Selector?
+                # https://w3lib.readthedocs.io/en/latest/w3lib.html#w3lib.html.strip_html5_whitespace
+                # url_forms = LinkExtractor(restrict_xpaths=self.child_url_xpath, attrs='href')
+                # links.append(url_forms.extract_links(row)[0])
+                ###
+
+                try:
+                    is_fixeds.append(row.xpath(self.is_fixed).get())
+                except:
+                    is_fixeds.append(None)
+                try:
+                    dates.append(row.xpath(self.dates_xpath).get())
+                except:
+                    dates.append(None)
+                try:
+                    authors.append(row.xpath(self.authors_xpath).get())
+                except:
+                    authors.append(None)
+                try:
+                    references.append(row.xpath(self.references_xpath).get())
+                except:
+                    references.append(None)
 
         titles, ids, links = self.split_id_and_link(links)  # id, link 추출
         titles = self.remove_whitespace(titles)
@@ -210,8 +237,9 @@ class DefaultSpider(scrapy.Spider):
             }
             self.scraped_info_data.append(scraped_info)
             # yield scraped_info
+        print(f"Success! {self.name}")
 
-    # Override close()
+    # Override
     def close(self, spider, reason):
         self.output_callback(self.scraped_info_data)
 
