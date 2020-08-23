@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, List, Tuple
 import datetime
+from urllib.parse import urljoin
 import re
 import zlib
 
 import scrapy
+from scrapy.http.request import Request
 from scrapy.linkextractors import LinkExtractor
+from scrapy.utils.response import get_base_url
 from scrapy_splash import SplashRequest
 from crawling.data import data
 from .LinkExtractor import MyLinkExtractor
@@ -23,7 +26,7 @@ class DefaultSpider(scrapy.Spider):
     handle_httpstatus_list = [404]
 
     # 데이터 검증
-    def _data_verification(self, item: Dict[str, List]):
+    def _data_verification(self, response, item: Dict[str, List]):
         from crawling import models
         when = f'While crawling {self.name}'
         link_len = len(item['links'])
@@ -32,7 +35,10 @@ class DefaultSpider(scrapy.Spider):
         eval(f"models.{item['model']}")
         if link_len == 0:
             # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
-            raise Exception(f'{when}, Crawled item is empty! Check the xpaths or base url.')
+            if self.try_time < 5:
+                return False
+            else:
+                raise Exception(f'{when}, Crawled item is empty! Xpaths and base url is wrong or connection has failed.')
         for key, value in item.items():
             if key not in ('model'):
                 if len(value) != link_len:
@@ -44,12 +50,14 @@ class DefaultSpider(scrapy.Spider):
                 # valid check. 크롤링된 데이터의 유효성 검증.
                 if value[0] == '':
                     raise Exception(f'{when}, {key} is empty. ("")')
+        return True
 
     # 객체 인스턴스에서 사용되는 변수 등록
     def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
         self.url_xpath = args['url_xpath'].replace('/nobr','')
+        titles_xpath = args['titles_xpath']
         is_fixed = args['is_fixed']
         dates_xpath = args['dates_xpath']
         authors_xpath = args['authors_xpath']
@@ -62,6 +70,7 @@ class DefaultSpider(scrapy.Spider):
             row_idx = self.url_xpath.rfind(tag)
         self.child_url_xpath = './'+self.url_xpath[self.url_xpath.rfind(tag)+3:]
         self.row_xpath = self.url_xpath[:row_idx+2].replace('/nobr','')
+        self.titles_xpath = './'+titles_xpath[titles_xpath.rfind(tag)+3:].replace('/nobr','')
         self.is_fixed = './'+is_fixed[is_fixed.rfind(tag)+3:].replace('/nobr','') if is_fixed else None
         self.dates_xpath = './'+dates_xpath[dates_xpath.rfind(tag)+3:].replace('/nobr','') if dates_xpath else None
         self.authors_xpath = './'+authors_xpath[authors_xpath.rfind(tag)+3:].replace('/nobr','') if authors_xpath else None
@@ -82,12 +91,10 @@ class DefaultSpider(scrapy.Spider):
 
     # Link 객체에서 url과 id 추출
     def split_id_and_link(self, links: List[str]) -> Tuple[List[str],List[str]]:
-        titles = []
         ids = []
         urls = []
         for link in links:
-            urls.append(link.url+'&')
-            titles.append(link.text)
+            urls.append(link+'&')
         for url in urls:
             idx = url.find(self.id)+len(self.id)+1
             for i in range(idx, len(url)):
@@ -98,7 +105,7 @@ class DefaultSpider(scrapy.Spider):
                 seed = id.encode('utf-8')
                 id = zlib.adler32(seed)
             ids.append(f'{self.name}-{id}')
-        return titles, ids, urls
+        return ids, links
 
     # date 형식에 맞게 조정
     def date_cleanse(self, dates: List[str]) -> List[str]:
@@ -167,24 +174,23 @@ class DefaultSpider(scrapy.Spider):
         if response.status == 404:
             raise Exception('404 Page not foud! Check the base url.')
 
-        links = []
-        # url_forms = MyLinkExtractor(restrict_xpaths=self.url_xpath, attrs='href')
-        # links: List[str] = url_forms.extract_links(response, omit=False)
+        base_url = get_base_url(response)
         row_datas = response.xpath(self.row_xpath)
+        links = []
+        titles = []
         is_fixeds = []
         dates = []
         authors = []
         references = []
 
         for row in row_datas:
-            if row.xpath(self.child_url_xpath):
-
-                ### How to get a link from Selector?
-                # https://w3lib.readthedocs.io/en/latest/w3lib.html#w3lib.html.strip_html5_whitespace
-                # url_forms = LinkExtractor(restrict_xpaths=self.child_url_xpath, attrs='href')
-                # links.append(url_forms.extract_links(row)[0])
-                ###
-
+            child_url = row.xpath(self.child_url_xpath+'/@href')
+            if child_url:
+                links.append(urljoin(base_url, child_url.get()))
+                try:
+                    titles.append(row.xpath(self.titles_xpath).get())
+                except:
+                    titles.append(None)
                 try:
                     is_fixeds.append(row.xpath(self.is_fixed).get())
                 except:
@@ -202,7 +208,7 @@ class DefaultSpider(scrapy.Spider):
                 except:
                     references.append(None)
 
-        titles, ids, links = self.split_id_and_link(links)  # id, link 추출
+        ids, links = self.split_id_and_link(links)  # id, link 추출
         titles = self.remove_whitespace(titles)
         is_fixeds = self.remove_whitespace(is_fixeds)
         dates = self.remove_whitespace(dates)
@@ -211,8 +217,7 @@ class DefaultSpider(scrapy.Spider):
 
         dates = self.date_cleanse(dates)        # date 형식에 맞게 조정
         is_fixeds = self.extend_list(is_fixeds, len(ids)-len(is_fixeds))
-        sites = [self.model.lower() for _ in range(len(links))]
-        self._data_verification({
+        if self._data_verification(response, {
             'model':self.model,
             'ids':ids, 
             'is_fixeds':is_fixeds,
@@ -221,7 +226,12 @@ class DefaultSpider(scrapy.Spider):
             'dates':dates, 
             'authors':authors, 
             'references':references,
-        })
+        }):
+            self.try_time = 0
+        else:
+            self.try_time += 1
+            yield Request(response.url, callback=self.parse, dont_filter=True)
+            return
 
         for id, is_fixed, title, link, date, author, reference in zip(
             ids, is_fixeds, titles, links, dates, authors, references):
@@ -252,6 +262,7 @@ class {key.capitalize()}Spider(DefaultSpider):
     def __init__(self, **kwargs):
         from crawling.data import data
         args = data['{key}']
+        self.try_time = 0
 
         self.name = args['name']
         if args['page']:
