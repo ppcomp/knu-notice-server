@@ -131,7 +131,7 @@ class DefaultSpider(scrapy.Spider):
         fix2 = []
         for d in fix1:
             if not d:
-                fix2.append(d)
+                fix2.append(None)
             elif d.find(':') != -1:
                 fix2.append(today_format)
             elif type1.match(d):                                    # 05-19

@@ -19,19 +19,22 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
         fixed_notices = models.Notice.objects.all().filter(is_fixed=True)
         fixed_notices.update(is_fixed=False)
 
-    res = []
+    # res = []
     result_dic = dict()
     if spider_idx == -1:
-        job = group([single_crawling_task.s(page_num, i) for i in range(len(spiders))])
-        res = job.apply_async(queue='single_crawling_tasks')
+        for i in range(len(spiders)):
+            result_dic.update(single_crawling_task(page_num, i))
+        # job = group([single_crawling_task.s(page_num, i) for i in range(len(spiders))])
+        # res = job.apply_async(queue='single_crawling_tasks')
     else:
-        job = group([single_crawling_task.s(page_num, spider_idx),])
-        res = job.apply_async(queue='single_crawling_tasks')
+        result_dic.update(single_crawling_task(page_num, spider_idx))
+        # job = group([single_crawling_task.s(page_num, spider_idx),])
+        # res = job.apply_async(queue='single_crawling_tasks')
 
-    with allow_join_result():
-        dic_list = res.get()
-        for dic in dic_list:
-            result_dic.update(dic)
+    # with allow_join_result():
+    #     dic_list = res.get()
+    #     for dic in dic_list:
+    #         result_dic.update(dic)
     
     target_board_code_list = save_data_to_db(result_dic)
 
