@@ -39,9 +39,9 @@ class DeviceSerializer(DynamicFieldsModelSerializer):
         if 'subscriptions' in attrs.keys() and attrs['subscriptions'] is not '':
             subscriptions = attrs['subscriptions']
             subscription_list = subscriptions.split('+')
-            board_names = models.__dict__.keys()
+            board_names = set(map(str.lower, models.__dict__.keys()))
             for subscription in subscription_list:
-                if subscription.title() not in board_names:
+                if subscription not in board_names:
                     raise ValidationError(f"There is no board: '{subscription}'. Please check subscriptions.")
         return attrs
 

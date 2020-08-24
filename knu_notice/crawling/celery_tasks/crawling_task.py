@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals
-import logging, os, json
+import time, logging, os, json
 from typing import List, Tuple, Set, Dict, TYPE_CHECKING
 
 from celery import group
@@ -14,6 +14,7 @@ from .single_crawling_task import single_crawling_task
 
 @app.task
 def crawling_task(page_num, spider_idx=-1, cron=False):
+    print(f"{time.strftime('%y-%m-%d %H:%M:%S')} crawling_task started.")
     if cron:
         from crawling import models    # lazy import
         fixed_notices = models.Notice.objects.all().filter(is_fixed=True)
@@ -24,20 +25,13 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
     if spider_idx == -1:
         for i in range(len(spiders)):
             result_dic.update(single_crawling_task(page_num, i))
-        # job = group([single_crawling_task.s(page_num, i) for i in range(len(spiders))])
-        # res = job.apply_async(queue='single_crawling_tasks')
     else:
         result_dic.update(single_crawling_task(page_num, spider_idx))
-        # job = group([single_crawling_task.s(page_num, spider_idx),])
-        # res = job.apply_async(queue='single_crawling_tasks')
-
-    # with allow_join_result():
-    #     dic_list = res.get()
-    #     for dic in dic_list:
-    #         result_dic.update(dic)
     
+    print(f"{time.strftime('%y-%m-%d %H:%M:%S')} save_data_to_db started.")
     target_board_code_list = save_data_to_db(result_dic)
 
+    print(f"{time.strftime('%y-%m-%d %H:%M:%S')} call_push_alarm started.")
     call_push_alarm(target_board_code_list)
 
 def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
@@ -107,9 +101,7 @@ def call_push_alarm(
                 notification=messaging.AndroidNotification(
                     title=title,
                     body=body,
-                    icon='',
-                    color='#f45342',
-                    sound='default' # 이거 없으면 백그라운드 수신시 소리, 진동, 화면켜짐 x
+                    sound='default'
                 ),
             ),
         )
