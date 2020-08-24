@@ -13,7 +13,7 @@ from operator import attrgetter
 from accounts import models as accounts_models
 from . import models
 from .data import data
-from .serializer import NoticeSerializer, NoticeSearchSerializer
+from .serializer import NoticeSerializer
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
@@ -84,7 +84,7 @@ class BoardsList(generics.ListAPIView):
         return queryset
 
 class SearchList(generics.ListAPIView):
-    serializer_class = NoticeSearchSerializer
+    serializer_class = NoticeSerializer
 
     def get_queryset(self):
         qeurys = self.request.query_params.get('q', None)
@@ -95,7 +95,7 @@ class SearchList(generics.ListAPIView):
             queryset = queryset.filter(site__in=board_set)
 
         if qeurys:
-            notice_queryset = models.Notice.objects.search(qeurys)
+            notice_queryset = queryset.filter(title__icontains=qeurys)
         else:
-            notice_queryset = QuerySet()
+            notice_queryset = queryset
         return notice_queryset

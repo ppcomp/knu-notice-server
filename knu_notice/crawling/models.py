@@ -1,34 +1,9 @@
 import os
 from django.db import models
-from django.db.models import Q, F
-from django.contrib.postgres.search import SearchQuery, Value, Func
 
 from crawling.data import data
 
-class Headline(Func):
-    function = 'ts_headline'
-
-    def __init__(self, field, query, config=None, options=None, **extra):
-        expressions = [field, query]
-        if config:
-            expressions.insert(0, Value(config))
-        if options:
-            expressions.append(Value(options))
-        extra.setdefault('output_field', models.TextField())
-        super().__init__(*expressions, **extra)
-
-class NoticeManager(models.Manager):
-    def search(self, search_text):
-        search_query = SearchQuery(search_text)
-        qs = (
-            self.get_queryset()
-            .filter(Q(title__icontains=search_text))
-            .annotate(bold_title=Headline(F('title'), search_query))
-        )
-        return qs
-
 class Notice(models.Model):
-    objects = NoticeManager()
     id = models.CharField(max_length=200, primary_key=True)
     site = models.CharField(max_length=30)
     is_fixed = models.BooleanField(default=False)
