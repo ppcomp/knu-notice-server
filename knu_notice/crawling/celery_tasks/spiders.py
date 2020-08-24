@@ -124,6 +124,5 @@ spiders = [
     crawl_spider.KwbiSpider,
     crawl_spider.KccSpider,
     crawl_spider.KsefSpider,
-    crawl_spider.HumanitiesSpider,
     crawl_spider.KwphiloSpider,
 ]

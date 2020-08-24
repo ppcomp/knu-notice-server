@@ -44,12 +44,12 @@ class DefaultSpider(scrapy.Spider):
                 if len(value) != link_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
                     raise Exception(f"{when}, {key} size is not same with link's. ({key} size: {len(value)}, link size: {link_len})")
-            if ((key == 'dates' and self.dates_xpath) or
-                (key == 'authors' and self.authors_xpath) or
-                (key == 'references' and self.references_xpath)):
-                # valid check. 크롤링된 데이터의 유효성 검증.
-                if value[0] == '':
-                    raise Exception(f'{when}, {key} is empty. ("")')
+            # if ((key == 'dates' and self.dates_xpath) or
+            #     (key == 'authors' and self.authors_xpath) or
+            #     (key == 'references' and self.references_xpath)):
+            #     # valid check. 크롤링된 데이터의 유효성 검증.
+            #     if value[0] == '':
+            #         raise Exception(f'{when}, {key} is empty. ("")')
         return True
 
     # 객체 인스턴스에서 사용되는 변수 등록
@@ -69,12 +69,12 @@ class DefaultSpider(scrapy.Spider):
             tag = 'li/'
             row_idx = self.url_xpath.rfind(tag)
         self.child_url_xpath = './'+self.url_xpath[self.url_xpath.rfind(tag)+3:]
-        self.row_xpath = self.url_xpath[:row_idx+2].replace('/nobr','')
-        self.titles_xpath = './'+titles_xpath[titles_xpath.rfind(tag)+3:].replace('/nobr','')
-        self.is_fixed = './'+is_fixed[is_fixed.rfind(tag)+3:].replace('/nobr','') if is_fixed else None
-        self.dates_xpath = './'+dates_xpath[dates_xpath.rfind(tag)+3:].replace('/nobr','') if dates_xpath else None
-        self.authors_xpath = './'+authors_xpath[authors_xpath.rfind(tag)+3:].replace('/nobr','') if authors_xpath else None
-        self.references_xpath = './'+references_xpath[references_xpath.rfind(tag)+3:].replace('/nobr','') if references_xpath else None
+        self.row_xpath = self.url_xpath[:row_idx+2]
+        self.titles_xpath = './'+titles_xpath[titles_xpath.rfind(tag)+3:]
+        self.is_fixed = './'+is_fixed[is_fixed.rfind(tag)+3:] if is_fixed else None
+        self.dates_xpath = './'+dates_xpath[dates_xpath.rfind(tag)+3:] if dates_xpath else None
+        self.authors_xpath = './'+authors_xpath[authors_xpath.rfind(tag)+3:] if authors_xpath else None
+        self.references_xpath = './'+references_xpath[references_xpath.rfind(tag)+3:] if references_xpath else None
 
     # 공백 제거. 가장 선행되어야 하는 전처리
     # How about use strip_html5_whitespace?
@@ -97,9 +97,9 @@ class DefaultSpider(scrapy.Spider):
             urls.append(link+'&')
         for url in urls:
             if self.id == 'restful':
-                idx = url.find('/')+1
+                idx = url.rfind('/')+1
             else:
-                idx = url.find(self.id)+len(self.id)+1
+                idx = url.rfind(self.id+'=')+len(self.id)+1
             for i in range(idx, len(url)):
                 if url[i] in ('&','?'):
                     break
@@ -194,37 +194,32 @@ class DefaultSpider(scrapy.Spider):
             if child_url:
                 links.append(urljoin(base_url, child_url.get()))
                 try:
-                    s = row.xpath(self.titles_xpath).get()
-                    if s.strip() == '':
-                        s = row.xpath(self.titles_xpath.replace('text()', '*/text()')).get()
-                    titles.append(s)
+                    s_list = row.xpath(self.titles_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
+                    titles.append(s if s else '')
                 except:
-                    titles.append(None)
+                    titles.append('')
                 try:
-                    s = row.xpath(self.is_fixed).get()
-                    if s.strip() == '':
-                        s = row.xpath(self.is_fixed.replace('text()', '*/text()')).get()
-                    is_fixeds.append(s)
+                    s_list = row.xpath(self.is_fixed).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
+                    is_fixeds.append(s if s else False)
                 except:
-                    is_fixeds.append(None)
+                    is_fixeds.append(False)
                 try:
-                    s = row.xpath(self.dates_xpath).get()
-                    if s.strip() == '':
-                        s = row.xpath(self.dates_xpath.replace('text()', '*/text()')).get()
+                    s_list = row.xpath(self.dates_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
                     dates.append(s)
                 except:
                     dates.append(None)
                 try:
-                    s = row.xpath(self.authors_xpath).get()
-                    if s.strip() == '':
-                        s = row.xpath(self.authors_xpath.replace('text()', '*/text()')).get()
+                    s_list = row.xpath(self.authors_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
                     authors.append(s)
                 except:
                     authors.append(None)
                 try:
-                    s = row.xpath(self.references_xpath).get()
-                    if s.strip() == '':
-                        s = row.xpath(self.references_xpath.replace('text()', '*/text()')).get()
+                    s_list = row.xpath(self.references_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
                     references.append(s)
                 except:
                     references.append(None)
