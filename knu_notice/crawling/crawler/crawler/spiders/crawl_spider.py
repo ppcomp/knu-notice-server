@@ -43,7 +43,7 @@ class DefaultSpider(scrapy.Spider):
             if key not in ('model'):
                 if len(value) != link_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
-                    raise Exception(f"{when}, {key} size is not same with title's. ({key} size: {len(value)}, id size: {link_len})")
+                    raise Exception(f"{when}, {key} size is not same with link's. ({key} size: {len(value)}, link size: {link_len})")
             if ((key == 'dates' and self.dates_xpath) or
                 (key == 'authors' and self.authors_xpath) or
                 (key == 'references' and self.references_xpath)):
@@ -96,9 +96,12 @@ class DefaultSpider(scrapy.Spider):
         for link in links:
             urls.append(link+'&')
         for url in urls:
-            idx = url.find(self.id)+len(self.id)+1
+            if self.id == 'restful':
+                idx = url.find('/')+1
+            else:
+                idx = url.find(self.id)+len(self.id)+1
             for i in range(idx, len(url)):
-                if url[i] == "&":
+                if url[i] in ('&','?'):
                     break
             id = url[idx:i]
             if len(id) > 20:
@@ -119,7 +122,8 @@ class DefaultSpider(scrapy.Spider):
         for date in dates:
             if date:
                 d = date.replace('.','-')               # 2020.05.19 > 2020-05-19
-                d = d.replace('/','-')                  # 11:35 > 2020-05-19
+                d = d.replace('/','-')                  # 2020/05/19 > 2020-05-19
+                d = d.replace('·','-')                  # 2020·05·19 > 2020-05-19
                 fix1.append(d)
             else:
                 fix1.append(date)
@@ -154,6 +158,8 @@ class DefaultSpider(scrapy.Spider):
                 except:
                     tmp = None
                 fix2.append(tmp)
+            else:
+                fix2.append(None)
 
         return fix2
 
@@ -188,23 +194,38 @@ class DefaultSpider(scrapy.Spider):
             if child_url:
                 links.append(urljoin(base_url, child_url.get()))
                 try:
-                    titles.append(row.xpath(self.titles_xpath).get())
+                    s = row.xpath(self.titles_xpath).get()
+                    if s.strip() == '':
+                        s = row.xpath(self.titles_xpath.replace('text()', '*/text()')).get()
+                    titles.append(s)
                 except:
                     titles.append(None)
                 try:
-                    is_fixeds.append(row.xpath(self.is_fixed).get())
+                    s = row.xpath(self.is_fixed).get()
+                    if s.strip() == '':
+                        s = row.xpath(self.is_fixed.replace('text()', '*/text()')).get()
+                    is_fixeds.append(s)
                 except:
                     is_fixeds.append(None)
                 try:
-                    dates.append(row.xpath(self.dates_xpath).get())
+                    s = row.xpath(self.dates_xpath).get()
+                    if s.strip() == '':
+                        s = row.xpath(self.dates_xpath.replace('text()', '*/text()')).get()
+                    dates.append(s)
                 except:
                     dates.append(None)
                 try:
-                    authors.append(row.xpath(self.authors_xpath).get())
+                    s = row.xpath(self.authors_xpath).get()
+                    if s.strip() == '':
+                        s = row.xpath(self.authors_xpath.replace('text()', '*/text()')).get()
+                    authors.append(s)
                 except:
                     authors.append(None)
                 try:
-                    references.append(row.xpath(self.references_xpath).get())
+                    s = row.xpath(self.references_xpath).get()
+                    if s.strip() == '':
+                        s = row.xpath(self.references_xpath.replace('text()', '*/text()')).get()
+                    references.append(s)
                 except:
                     references.append(None)
 
@@ -247,7 +268,7 @@ class DefaultSpider(scrapy.Spider):
             }
             self.scraped_info_data.append(scraped_info)
             # yield scraped_info
-        print(f"Success! {self.name}")
+        # print(f"Success! {self.name}")
 
     # Override
     def close(self, spider, reason):
@@ -267,7 +288,10 @@ class {key.capitalize()}Spider(DefaultSpider):
         self.name = args['name']
         if args['page']:
             url:str = args['start_urls']
-            url_page = url + '&' + args['page'] + '=%d'
+            if args['page'] == 'restful':
+                url_page = url + '/' + '%d'
+            else:
+                url_page = url + '&' + args['page'] + '=%d'
             urls = [url_page % i for i in range(1, page_num+1)]
             self.start_urls = urls
         else:
