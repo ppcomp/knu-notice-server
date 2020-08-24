@@ -14,7 +14,7 @@ app = Celery(
 app.conf.beat_schedule = {
     'crawling_task': {
         'task': 'crawling.celery_tasks.crawling_task.crawling_task',
-        'schedule': timedelta(seconds=120),
+        'schedule': timedelta(seconds=300),
         'args': (1,-1,True),
         'options': {'queue' : 'crawling_tasks'},
     }
