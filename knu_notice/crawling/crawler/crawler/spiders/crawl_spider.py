@@ -3,8 +3,10 @@ from typing import Dict, List, Tuple
 import datetime
 from urllib.parse import urljoin
 import re
+import requests
 import zlib
 
+from bs4 import BeautifulSoup
 import scrapy
 from scrapy.http.request import Request
 from scrapy.linkextractors import LinkExtractor
@@ -62,6 +64,7 @@ class DefaultSpider(scrapy.Spider):
         dates_xpath = args['dates_xpath']
         authors_xpath = args['authors_xpath']
         references_xpath = args['references_xpath']
+        self.in_dates_css = args['in_dates_css']
 
         tag = 'tr/'
         row_idx = self.url_xpath.rfind(tag)
@@ -111,55 +114,55 @@ class DefaultSpider(scrapy.Spider):
         return ids, links
 
     # date 형식에 맞게 조정
-    def date_cleanse(self, dates: List[str]) -> List[str]:
+    def date_cleanse(self, dates: List[str], links: List[str]) -> List[str]:
         today = datetime.date.today()
         today_format = today.strftime("%Y-%m-%d")
-        type1 = re.compile(r'^\d{2}-\d{2}$')        # 05-19
-        type2 = re.compile(r'^\d{2}-\d{2}-\d{2}$')  # 20-05-19
-        type3 = re.compile(r'^\d{4}-\d{2}-\d{2}$')  # 2020-05-19
+        type1 = re.compile(r'\d{4}-\d{2}-\d{2}')  # 2020-05-19
+        type2 = re.compile(r'\d{2}-\d{2}-\d{2}')  # 20-05-19
+        type3 = re.compile(r'\d{2}-\d{2}')        # 05-19
 
         fix1 = []
-        for date in dates:
+        for date, link in zip(dates, links):
             if date:
                 d = date.replace('.','-')               # 2020.05.19 > 2020-05-19
                 d = d.replace('/','-')                  # 2020/05/19 > 2020-05-19
                 d = d.replace('·','-')                  # 2020·05·19 > 2020-05-19
                 fix1.append(d)
             else:
-                fix1.append(date)
+                html = requests.get(link)
+                soup = BeautifulSoup(html.text, 'html.parser')
+                fix1.append(soup.select_one(self.in_dates_css).text)
 
         fix2 = []
         for d in fix1:
-            if not d:
-                fix2.append(None)
-            elif d.find(':') != -1:
-                fix2.append(today_format)
-            elif type1.match(d):                                    # 05-19
+            type1s = type1.findall(d)
+            type2s = type2.findall(d)
+            type3s = type3.findall(d)
+            tmp = None
+            if type1s:                                              # 2020-05-19
                 try:
-                    tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
+                    tmp = datetime.datetime.strptime(type1s[0], "%Y-%m-%d")
+                    tmp = tmp.strftime("%Y-%m-%d")
+                except:
+                    tmp = None
+            elif type2s:                                            # 20-05-19
+                try:
+                    tmp = datetime.datetime.strptime(type2s[0], "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
+                    tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                except:
+                    tmp = None
+            elif type3s:                                            # 05-19
+                try:
+                    tmp = datetime.datetime.strptime(type3s[0], "%m-%d")    # datetime 객체로 변환 (1900-05-19)
                     tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
                     if today < tmp.date():
                         tmp = tmp.replace(year=today.year-1)
                     tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
                 except:
                     tmp = None
-                fix2.append(tmp)
-            elif type2.match(d):                                    # 20-05-19
-                try:
-                    tmp = datetime.datetime.strptime(d, "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
-                    tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
-                except:
-                    tmp = None
-                fix2.append(tmp)
-            elif type3.match(d):                                    # 2020-05-19
-                try:
-                    tmp = datetime.datetime.strptime(d, "%Y-%m-%d")
-                    tmp = tmp.strftime("%Y-%m-%d")
-                except:
-                    tmp = None
-                fix2.append(tmp)
-            else:
-                fix2.append(None)
+            elif d.find(':') != -1:
+                tmp = today_format
+            fix2.append(tmp)
 
         return fix2
 
@@ -231,7 +234,7 @@ class DefaultSpider(scrapy.Spider):
         authors = self.remove_whitespace(authors)
         references = self.remove_whitespace(references)
 
-        dates = self.date_cleanse(dates)        # date 형식에 맞게 조정
+        dates = self.date_cleanse(dates, links)        # date 형식에 맞게 조정
         is_fixeds = self.extend_list(is_fixeds, len(ids)-len(is_fixeds))
         if self._data_verification(response, {
             'model':self.model,
@@ -263,6 +266,7 @@ class DefaultSpider(scrapy.Spider):
             }
             self.scraped_info_data.append(scraped_info)
             # yield scraped_info
+            print(f"Success! {self.name} {date} {title}")
         # print(f"Success! {self.name}")
 
     # Override
