@@ -37,14 +37,16 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
 def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
     from crawling import models
     target_board_code_set = set()
+    notice_id_list = []
     for board_code, item_list in boards_data.items():
         model = eval(f"models.{board_code.capitalize()}")
         for item in item_list:
+            is_fixed = True if item['is_fixed'] and not item['is_fixed'].isdigit() else False
             notice, created = model.objects.get_or_create(
                 id = item['id'],  # id만 일치하면 기존에 있던 데이터라고 판단.
                 defaults={
                     'site':item['site'],
-                    'is_fixed':True if item['is_fixed'] and not item['is_fixed'].isdigit() else False,
+                    'is_fixed':is_fixed,
                     'title':item['title'],
                     'link':item['link'],
                     'date':item['date'],
@@ -58,8 +60,9 @@ def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
                 target_board_code_set.add(item['site'])
                 print(f"new Data insert! {item['site']}:{item['title']}")
             else:
-                if notice.is_fixed != item['is_fixed']:
-                    notice.is_fixed = item['is_fixed']
+                if notice.is_fixed != is_fixed:
+                    notice_id_list.append(item['id'])
+    models.Notice.objects.all().filter(id__in=set(notice_id_list)).update(is_fixed=True)
     return list(target_board_code_set)
 
 def call_push_alarm(
