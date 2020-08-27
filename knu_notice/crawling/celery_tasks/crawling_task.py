@@ -96,7 +96,9 @@ def call_push_alarm(
 
     if len(registration_dic.keys()) != 0:
         messages = []
-        for device_id, to_body in registration_dic.items():
+        reg_keys = list(registration_dic.keys())
+        reg_values = list(registration_dic.values())
+        for device_id, to_body in zip(reg_keys, reg_values):
             messages.append(
                 messaging.Message(
                     data=data,
@@ -104,7 +106,7 @@ def call_push_alarm(
                     token=device_id,
                 )
             )
-        check_fcm_response(messaging.send_all(messages), list(registration_dic.keys()))
+        check_fcm_response(messaging.send_all(messages), reg_keys)
 
     elif len(registration_tokens) != 0:
         message = messaging.MulticastMessage(
