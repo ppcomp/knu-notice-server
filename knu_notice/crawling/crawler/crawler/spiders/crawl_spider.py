@@ -65,6 +65,7 @@ class DefaultSpider(scrapy.Spider):
         authors_xpath = args['authors_xpath']
         references_xpath = args['references_xpath']
         self.in_date_xpath = args['in_date_xpath']
+        self.drop = args['drop']
 
         tag = 'tr/'
         row_idx = self.url_xpath.rfind(tag)
@@ -119,7 +120,6 @@ class DefaultSpider(scrapy.Spider):
         today_format = today.strftime("%Y-%m-%d")
         type1 = re.compile(r'\d{4}-\d{2}-\d{2}')  # 2020-05-19
         type2 = re.compile(r'\d{2}-\d{2}-\d{2}')  # 20-05-19
-        type3 = re.compile(r'\d{2}-\d{2}')        # 05-19
 
         fix1 = []
         for date in dates:
@@ -190,7 +190,7 @@ class DefaultSpider(scrapy.Spider):
         authors = []
         references = []
 
-        for row in row_datas:
+        for row in row_datas[self.drop:]:
             child_url = row.xpath(self.child_url_xpath+'/@href')
             if child_url:
                 links.append(urljoin(base_url, child_url.get()))
