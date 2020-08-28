@@ -15,6 +15,14 @@ from . import models
 from .data import data
 from .serializer import NoticeSerializer
 
+def _get_available_boards():
+    from crawling.celery_tasks import spiders
+    ret = []
+    for spider in spiders.spiders:
+        code = spider.__name__[:spider.__name__.find('Spider')].lower()
+        ret.append(code)
+    return ret
+
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def init(request, *arg, **kwarg):
@@ -62,10 +70,8 @@ def push(request, *arg, **kwarg):
 
 @api_view(['GET'])
 def get_board_list(request):
-    from crawling.celery_tasks import spiders
     ret = []
-    for spider in spiders.spiders:
-        code = spider.__name__[:spider.__name__.find('Spider')].lower()
+    for code in _get_available_boards():
         ret.append({
             'name':data[code]['name'],
             'api_url':data[code]['api_url'],
@@ -74,11 +80,12 @@ def get_board_list(request):
 
 class BoardsList(generics.ListAPIView):
     serializer_class = NoticeSerializer
+    available_boards = set(_get_available_boards())
 
     def get_queryset(self):
         qeurys = self.request.query_params.get('q', None)
         target = self.request.query_params.get('target', None)
-        queryset = models.Notice.objects.all()
+        queryset = models.Notice.objects.all().filter(site__in=self.available_boards)
         if target and target != 'all':
             board_set = set(target.split())
             queryset = queryset.filter(site__in=board_set).order_by('-is_fixed','-date','-id')

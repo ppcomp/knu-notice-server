@@ -3,8 +3,10 @@ from typing import Dict, List, Tuple
 import datetime
 from urllib.parse import urljoin
 import re
+import requests
 import zlib
 
+from bs4 import BeautifulSoup
 import scrapy
 from scrapy.http.request import Request
 from scrapy.linkextractors import LinkExtractor
@@ -56,12 +58,14 @@ class DefaultSpider(scrapy.Spider):
     def set_args(self, args: Dict):
         self.model = args['model']
         self.id = args['id']
-        self.url_xpath = args['url_xpath'].replace('/nobr','')
+        self.url_xpath = args['url_xpath']
         titles_xpath = args['titles_xpath']
         is_fixed = args['is_fixed']
         dates_xpath = args['dates_xpath']
         authors_xpath = args['authors_xpath']
         references_xpath = args['references_xpath']
+        self.in_date_xpath = args['in_date_xpath']
+        self.drop = args['drop']
 
         tag = 'tr/'
         row_idx = self.url_xpath.rfind(tag)
@@ -114,9 +118,8 @@ class DefaultSpider(scrapy.Spider):
     def date_cleanse(self, dates: List[str]) -> List[str]:
         today = datetime.date.today()
         today_format = today.strftime("%Y-%m-%d")
-        type1 = re.compile(r'^\d{2}-\d{2}$')        # 05-19
-        type2 = re.compile(r'^\d{2}-\d{2}-\d{2}$')  # 20-05-19
-        type3 = re.compile(r'^\d{4}-\d{2}-\d{2}$')  # 2020-05-19
+        type1 = re.compile(r'\d{4}-\d{2}-\d{2}')  # 2020-05-19
+        type2 = re.compile(r'\d{2}-\d{2}-\d{2}')  # 20-05-19
 
         fix1 = []
         for date in dates:
@@ -132,36 +135,34 @@ class DefaultSpider(scrapy.Spider):
         for d in fix1:
             if not d:
                 fix2.append(None)
-            elif d.find(':') != -1:
-                fix2.append(today_format)
-            elif type1.match(d):                                    # 05-19
+                continue
+            type1s = type1.findall(d)
+            type2s = type2.findall(d)
+            tmp = None
+            if type1s:                                              # 2020-05-19
                 try:
-                    tmp = datetime.datetime.strptime(d, "%m-%d")    # datetime 객체로 변환 (1900-05-19)
-                    tmp = tmp.replace(year=today.year)              # datetime 객체 년도 수정 (2020-05-19)
-                    if today < tmp.date():
-                        tmp = tmp.replace(year=today.year-1)
-                    tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
-                except:
-                    tmp = None
-                fix2.append(tmp)
-            elif type2.match(d):                                    # 20-05-19
-                try:
-                    tmp = datetime.datetime.strptime(d, "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
-                    tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
-                except:
-                    tmp = None
-                fix2.append(tmp)
-            elif type3.match(d):                                    # 2020-05-19
-                try:
-                    tmp = datetime.datetime.strptime(d, "%Y-%m-%d")
+                    tmp = datetime.datetime.strptime(type1s[0], "%Y-%m-%d")
                     tmp = tmp.strftime("%Y-%m-%d")
                 except:
                     tmp = None
-                fix2.append(tmp)
-            else:
-                fix2.append(None)
+            elif type2s:                                            # 20-05-19
+                try:
+                    tmp = datetime.datetime.strptime(type2s[0], "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
+                    tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                except:
+                    tmp = None
+            elif d.find(':') != -1:
+                tmp = today_format
+            fix2.append(tmp)
 
         return fix2
+
+    def parse_inside(self, response):
+        s_list = response.xpath(self.in_date_xpath).getall()
+        s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
+        scraped_info = response.meta['scraped_info']
+        scraped_info['date'] = self.date_cleanse([s])[0]
+        self.scraped_info_data.append(scraped_info)
 
     def extend_list(self, arr:List[str], target:int) -> List[str]:
         add = [None for i in range(target)]
@@ -189,7 +190,7 @@ class DefaultSpider(scrapy.Spider):
         authors = []
         references = []
 
-        for row in row_datas:
+        for row in row_datas[self.drop:]:
             child_url = row.xpath(self.child_url_xpath+'/@href')
             if child_url:
                 links.append(urljoin(base_url, child_url.get()))
@@ -246,7 +247,7 @@ class DefaultSpider(scrapy.Spider):
             self.try_time = 0
         else:
             self.try_time += 1
-            yield Request(response.url, callback=self.parse, dont_filter=True)
+            yield SplashRequest(response.url, callback=self.parse, dont_filter=True)
             return
 
         for id, is_fixed, title, link, date, author, reference in zip(
@@ -261,12 +262,22 @@ class DefaultSpider(scrapy.Spider):
                 'author' : author,
                 'reference' : reference,
             }
-            self.scraped_info_data.append(scraped_info)
+            if not date and self.in_date_xpath:
+                request = SplashRequest(link, callback=self.parse_inside,
+                    endpoint='render.html',
+                    args={'wait': 0.5},
+                )
+                request.meta['scraped_info'] = scraped_info
+                yield request
+            else:
+                self.scraped_info_data.append(scraped_info)
             # yield scraped_info
         # print(f"Success! {self.name}")
 
     # Override
     def close(self, spider, reason):
+        for info in self.scraped_info_data:
+            print(f"Success! {self.name} {info['date']} {info['title']}")
         self.output_callback(self.scraped_info_data)
 
 page_num = 1
