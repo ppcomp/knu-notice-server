@@ -37,14 +37,16 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
 def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
     from crawling import models
     target_board_code_set = set()
+    notice_id_list = []
     for board_code, item_list in boards_data.items():
         model = eval(f"models.{board_code.capitalize()}")
         for item in item_list:
+            is_fixed = True if item['is_fixed'] and not item['is_fixed'].isdigit() else False
             notice, created = model.objects.get_or_create(
                 id = item['id'],  # id만 일치하면 기존에 있던 데이터라고 판단.
                 defaults={
                     'site':item['site'],
-                    'is_fixed':True if item['is_fixed'] and not item['is_fixed'].isdigit() else False,
+                    'is_fixed':is_fixed,
                     'title':item['title'],
                     'link':item['link'],
                     'date':item['date'],
@@ -58,8 +60,9 @@ def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
                 target_board_code_set.add(item['site'])
                 print(f"new Data insert! {item['site']}:{item['title']}")
             else:
-                if notice.is_fixed != item['is_fixed']:
-                    notice.is_fixed = item['is_fixed']
+                if notice.is_fixed != is_fixed:
+                    notice_id_list.append(item['id'])
+    models.Notice.objects.all().filter(id__in=set(notice_id_list)).update(is_fixed=True)
     return list(target_board_code_set)
 
 def call_push_alarm(
@@ -69,11 +72,13 @@ def call_push_alarm(
     title='새 공지가 추가되었습니다.',
     body='지금 어플을 열어 확인해 보세요!') -> Tuple[str,str]:
     from accounts import models as accounts_models
+    from crawling.data import data as board_data
     
     msg = "Push success."
     code = status.HTTP_200_OK
 
     registration_tokens = []
+    registration_dic = dict()
     if is_broadcast:
         target_device_list = list(accounts_models.Device.objects.all()
             .filter(alarm_switch=True)
@@ -81,18 +86,29 @@ def call_push_alarm(
         )
         registration_tokens = target_device_list
     else:
-        token_set = set()
-        for board_code in target_board_code_list:
-            tokens = list(accounts_models.Device.objects
-                .all()
-                .exclude(alarm_switch=False)
-                .filter(subscriptions__contains=board_code)
-                .values_list('id', flat=True)
-            )
-            token_set.update(tokens)
-        registration_tokens = list(token_set)
+        target_board_code_set = set(target_board_code_list)
+        devices = accounts_models.Device.objects.all().exclude(alarm_switch=False)
+        for device in devices:
+            subscriptions_set = set(device.subscriptions.split('+'))
+            target_list = list(subscriptions_set & target_board_code_set)
+            if target_list:
+                registration_dic[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
 
-    if len(registration_tokens) != 0:
+    if len(registration_dic.keys()) != 0:
+        messages = []
+        reg_keys = list(registration_dic.keys())
+        reg_values = list(registration_dic.values())
+        for device_id, to_body in zip(reg_keys, reg_values):
+            messages.append(
+                messaging.Message(
+                    data=data,
+                    notification=messaging.Notification(title, to_body),
+                    token=device_id,
+                )
+            )
+        check_fcm_response(messaging.send_all(messages), reg_keys)
+
+    elif len(registration_tokens) != 0:
         message = messaging.MulticastMessage(
             data=data,
             tokens=registration_tokens,
@@ -105,17 +121,18 @@ def call_push_alarm(
                 ),
             ),
         )
-        response = messaging.send_multicast(message)
-
-        if response.failure_count > 0:
-            responses = response.responses
-            failed_tokens = []
-            for idx, resp in enumerate(responses):
-                if not resp.success:
-                    # The order of responses corresponds to the order of the registration tokens.
-                    failed_tokens.append(registration_tokens[idx])
-            msg = f'List of tokens that caused failures: {failed_tokens}'
-            print(msg)
+        check_fcm_response(messaging.send_multicast(message), registration_tokens)
     else:
         msg = "There is no target devices."
     return msg, code
+
+def check_fcm_response(response, tokens):
+    if response.failure_count > 0:
+        responses = response.responses
+        failed_tokens = []
+        for idx, resp in enumerate(responses):
+            if not resp.success:
+                # The order of responses corresponds to the order of the registration tokens.
+                failed_tokens.append(tokens[idx])
+        msg = f'List of tokens that caused failures: {failed_tokens}'
+        print(msg)

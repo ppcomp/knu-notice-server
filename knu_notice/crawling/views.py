@@ -83,27 +83,15 @@ class BoardsList(generics.ListAPIView):
     available_boards = set(_get_available_boards())
 
     def get_queryset(self):
-        queryset = models.Notice.objects.all().filter(site__in=self.available_boards)
-        boards = self.request.query_params.get('q', None)
-        if boards:
-            board_set = set(boards.split())
-            queryset = queryset.filter(site__in=board_set).order_by('-date','-id')
-        return queryset
-
-class SearchList(generics.ListAPIView):
-    serializer_class = NoticeSerializer
-    available_boards = set(_get_available_boards())
-
-    def get_queryset(self):
         qeurys = self.request.query_params.get('q', None)
         target = self.request.query_params.get('target', None)
         queryset = models.Notice.objects.all().filter(site__in=self.available_boards)
         if target and target != 'all':
             board_set = set(target.split())
-            queryset = queryset.filter(site__in=board_set).order_by('-date','-id')
+            queryset = queryset.filter(site__in=board_set).order_by('-is_fixed','-date','-id')
 
         if qeurys:
-            notice_queryset = queryset.filter(title__icontains=qeurys).order_by('-date','-id')
+            notice_queryset = queryset.filter(title__icontains=qeurys).order_by('-is_fixed','-date','-id')
         else:
             notice_queryset = queryset
         return notice_queryset
