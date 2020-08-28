@@ -104,7 +104,7 @@ spiders = [
     crawl_spider.KnudormSpider,
     crawl_spider.LincSpider,
     crawl_spider.SwunivSpider,
-    crawl_spider.KlacSpider,
+    # crawl_spider.KlacSpider,          # Need permission for read
     crawl_spider.GiftedSpider,
     crawl_spider.KwclabSpider,
     crawl_spider.KileSpider,

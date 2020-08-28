@@ -276,8 +276,8 @@ class DefaultSpider(scrapy.Spider):
 
     # Override
     def close(self, spider, reason):
-        for info in self.scraped_info_data:
-            print(f"Success! {self.name} {info['date']} {info['title']}")
+        # for info in self.scraped_info_data:
+        #     print(f"Success! {self.name} {info['date']} {info['title']}")
         self.output_callback(self.scraped_info_data)
 
 page_num = 1
