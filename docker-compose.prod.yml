@@ -38,7 +38,7 @@ services:
     celery:
         build: .
         container_name: celery01
-        command: celery worker --app=crawling.celery_tasks.crawling_task --pidfile= --without-gossip --without-mingle --without-heartbeat -Ofair
+        command: celery worker --app=crawling.celery_tasks.crawling_task -P gevent --pidfile= --without-gossip --without-mingle --without-heartbeat -Ofair
         volumes:
             - ./knu_notice:/home/knu_notice
         depends_on:
