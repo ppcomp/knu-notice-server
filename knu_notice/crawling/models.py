@@ -12,9 +12,10 @@ class Notice(models.Model):
     date = models.DateField(null=True)
     author = models.CharField(max_length=30, null=True)
     reference = models.CharField(max_length=50, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-is_fixed', '-date']  # 기본 정렬: 고정 공지 우선, 시간 내림차순(최신 우선)
+        ordering = ['-date']  # 기본 정렬: 고정 공지 우선, 시간 내림차순(최신 우선)
 
     def __str__(self):
         return self.title
