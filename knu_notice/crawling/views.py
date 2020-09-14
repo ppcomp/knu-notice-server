@@ -1,3 +1,5 @@
+from distutils import util
+
 from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchVector
 from django.db.models.query import QuerySet
 from django.shortcuts import render
@@ -83,15 +85,20 @@ class BoardsList(generics.ListAPIView):
     available_boards = set(_get_available_boards())
 
     def get_queryset(self):
+        orders = ['-date','-created_at','-id']
         qeurys = self.request.query_params.get('q', None)
-        target = self.request.query_params.get('target', None)
+        target = self.request.query_params.get('target', 'all')
+        is_fixed = self.request.query_params.get('fixed', 'false')
         queryset = models.Notice.objects.all().filter(site__in=self.available_boards)
-        if target and target != 'all':
+        
+        if util.strtobool(is_fixed):
+            orders.insert(0, '-is_fixed')
+        if target != 'all':
             board_set = set(target.split())
-            queryset = queryset.filter(site__in=board_set).order_by('-is_fixed','-date','created_at','-id')
+            queryset = queryset.filter(site__in=board_set).order_by(*orders)
 
         if qeurys:
-            notice_queryset = queryset.filter(title__icontains=qeurys).order_by('-is_fixed','-date','created_at','-id')
+            notice_queryset = queryset.filter(title__icontains=qeurys).order_by(*orders)
         else:
-            notice_queryset = queryset
+            notice_queryset = queryset.order_by(*orders)
         return notice_queryset
