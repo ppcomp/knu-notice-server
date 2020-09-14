@@ -88,10 +88,10 @@ class BoardsList(generics.ListAPIView):
         queryset = models.Notice.objects.all().filter(site__in=self.available_boards)
         if target and target != 'all':
             board_set = set(target.split())
-            queryset = queryset.filter(site__in=board_set).order_by('-is_fixed','-date','-id')
+            queryset = queryset.filter(site__in=board_set).order_by('-is_fixed','-date','created_at','-id')
 
         if qeurys:
-            notice_queryset = queryset.filter(title__icontains=qeurys).order_by('-is_fixed','-date','-id')
+            notice_queryset = queryset.filter(title__icontains=qeurys).order_by('-is_fixed','-date','created_at','-id')
         else:
             notice_queryset = queryset
         return notice_queryset
