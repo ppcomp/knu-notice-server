@@ -1,6 +1,9 @@
 from distutils import util
+from functools import reduce
+import operator
 
 from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchVector
+from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.shortcuts import render
 import firebase_admin
@@ -98,7 +101,8 @@ class BoardsList(generics.ListAPIView):
             queryset = queryset.filter(site__in=board_set).order_by(*orders)
 
         if qeurys:
-            notice_queryset = queryset.filter(title__icontains=qeurys).order_by(*orders)
+            qeurys = set(qeurys.split())
+            notice_queryset = queryset.filter(reduce(operator.or_, (Q(title__icontains=x) for x in qeurys))).order_by(*orders)
         else:
             notice_queryset = queryset.order_by(*orders)
         return notice_queryset
