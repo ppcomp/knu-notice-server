@@ -13,5 +13,6 @@ class NoticeSerializer(serializers.ModelSerializer):
             'author',
             'reference',
             'is_fixed',
+            'created_at',
         )
         read_only = ('id')
