@@ -77,14 +77,14 @@ def call_push_alarm(
     msg = "Push success."
     code = status.HTTP_200_OK
 
-    registration_tokens = []
-    registration_dic = dict()
+    broadcast_tokens = []
+    subscription_tokens = dict()
     if is_broadcast:
         target_device_list = list(accounts_models.Device.objects.all()
             .filter(alarm_switch=True)
             .values_list('id', flat=True)
         )
-        registration_tokens = target_device_list
+        broadcast_tokens = target_device_list
     else:
         target_board_code_set = set(target_board_code_list)
         devices = accounts_models.Device.objects.all().exclude(alarm_switch=False)
@@ -92,36 +92,46 @@ def call_push_alarm(
             subscriptions_set = set(device.subscriptions.split('+'))
             target_list = list(subscriptions_set & target_board_code_set)
             if target_list:
-                registration_dic[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
+                subscription_tokens[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
 
-    if len(registration_dic.keys()) != 0:
+    if subscription_tokens:
+        '''
+        Condition:
+        1. is_broadcast=False
+        2. 알람을 켜고, 새 글이 올라온 학과를 구독중인 디바이스(subscription_tokens)가 존재할때
+
+        messaging.send_all() -> Maximum target: 500
+        https://firebase.google.com/docs/cloud-messaging/send-message?hl=ko#send-a-batch-of-messages
+        '''
         messages = []
-        reg_keys = list(registration_dic.keys())
-        reg_values = list(registration_dic.values())
+        reg_keys = list(subscription_tokens.keys())
+        reg_values = list(subscription_tokens.values())
         for device_id, to_body in zip(reg_keys, reg_values):
             messages.append(
                 messaging.Message(
                     data=data,
-                    notification=messaging.Notification(title, to_body),
                     token=device_id,
+                    notification=messaging.Notification(title=title, body=to_body),
+                    android=messaging.AndroidConfig(priority='high')
                 )
             )
         check_fcm_response(messaging.send_all(messages), reg_keys)
+    elif broadcast_tokens:
+        '''
+        Condition:
+        1. is_broadcast=True
+        2. 알람을 킨 디바이스(broadcast_tokens)가 존재할때
 
-    elif len(registration_tokens) != 0:
+        Maximum target: 100
+        https://firebase.google.com/docs/reference/admin/dotnet/class/firebase-admin/messaging/multicast-message
+        '''
         message = messaging.MulticastMessage(
             data=data,
-            tokens=registration_tokens,
-            android=messaging.AndroidConfig(
-                priority='normal',
-                notification=messaging.AndroidNotification(
-                    title=title,
-                    body=body,
-                    sound='default'
-                ),
-            ),
+            tokens=broadcast_tokens,
+            notification=messaging.Notification(title=title, body=body),
+            android=messaging.AndroidConfig(priority='normal')
         )
-        check_fcm_response(messaging.send_multicast(message), registration_tokens)
+        check_fcm_response(messaging.send_multicast(message), broadcast_tokens)
     else:
         msg = "There is no target devices."
     return msg, code
