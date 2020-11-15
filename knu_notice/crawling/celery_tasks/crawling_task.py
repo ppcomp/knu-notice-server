@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
+from collections import defaultdict
 import time, logging, os, json
-from typing import List, Tuple, Set, Dict, TYPE_CHECKING
+from typing import List, Tuple, Set, Dict, DefaultDict, TYPE_CHECKING
 
 from celery import group
 from celery.result import allow_join_result
@@ -29,14 +30,14 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
         result_dic.update(single_crawling_task(page_num, spider_idx))
     
     print(f"{time.strftime('%y-%m-%d %H:%M:%S')} save_data_to_db started.")
-    target_board_code_list = save_data_to_db(result_dic)
+    target_board_dic = save_data_to_db(result_dic)
 
     print(f"{time.strftime('%y-%m-%d %H:%M:%S')} call_push_alarm started.")
-    call_push_alarm(target_board_code_list)
+    call_push_alarm(target_board_dic)
 
-def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
+def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> DefaultDict[str,set]:
     from crawling import models
-    target_board_code_set = set()
+    target_board_dic = defaultdict(set)
     notice_id_list = []
     for board_code, item_list in boards_data.items():
         model = eval(f"models.{board_code.capitalize()}")
@@ -57,16 +58,19 @@ def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> List[str]:
             #created = True: DB에 저장된 같은 데이터가 없음 (Create)
             #created = False: DB에 저장된 같은 데이터가 있음 (Get)
             if created:
-                target_board_code_set.add(item['site'])
+                target_board_dic[item['site']].add(item['title'])
                 print(f"new Data insert! {item['site']}:{item['title']}")
             else:
                 if notice.is_fixed != is_fixed:
                     notice_id_list.append(item['id'])
     models.Notice.objects.all().filter(id__in=set(notice_id_list)).update(is_fixed=True)
-    return list(target_board_code_set)
+    return target_board_dic
+
+def get_target_tokens():
+    pass    
 
 def call_push_alarm(
-    target_board_code_list: List[str]=[],
+    target_board_dic: DefaultDict[str,set] = defaultdict(set),
     is_broadcast: bool=False,
     data=dict(),
     title='새 공지가 추가되었습니다.',
@@ -79,6 +83,7 @@ def call_push_alarm(
 
     broadcast_tokens = []
     subscription_tokens = dict()
+    keyword_tokens = dict()
     if is_broadcast:
         target_device_list = list(accounts_models.Device.objects.all()
             .filter(alarm_switch=True)
@@ -86,13 +91,17 @@ def call_push_alarm(
         )
         broadcast_tokens = target_device_list
     else:
-        target_board_code_set = set(target_board_code_list)
+        target_board_code_set = set(target_board_dic.keys())
         devices = accounts_models.Device.objects.all().exclude(alarm_switch=False)
         for device in devices:
             subscriptions_set = set(device.subscriptions.split('+'))
             target_list = list(subscriptions_set & target_board_code_set)
             if target_list:
                 subscription_tokens[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
+
+            # orders = ['-date','-created_at','-id']
+            # notice_queryset = queryset.filter(reduce(operator.or_, (Q(title__icontains=x) for x in qeurys))).order_by(*orders)
+            # keywords_set = set(device.keywords.split('+'))
 
     if subscription_tokens:
         '''
