@@ -66,8 +66,14 @@ def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> DefaultDict[s
     models.Notice.objects.all().filter(id__in=set(notice_id_list)).update(is_fixed=True)
     return target_board_dic
 
-def get_target_tokens():
-    pass    
+def get_alarm_keyword_set(target_board_title_list, keywords_set):
+    alarm_keyword_set = set()
+    for keyword in keywords_set:
+        for title in target_board_title_list:
+            if keyword in title:
+                alarm_keyword_set.add(keyword)
+                break
+    return alarm_keyword_set
 
 def call_push_alarm(
     target_board_dic: DefaultDict[str,set] = defaultdict(set),
@@ -92,16 +98,39 @@ def call_push_alarm(
         broadcast_tokens = target_device_list
     else:
         target_board_code_set = set(target_board_dic.keys())
+        target_board_title_list = list(target_board_dic.values())
         devices = accounts_models.Device.objects.all().exclude(alarm_switch=False)
         for device in devices:
             subscriptions_set = set(device.subscriptions.split('+'))
             target_list = list(subscriptions_set & target_board_code_set)
             if target_list:
                 subscription_tokens[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
+            keywords_set = set(device.keywords.split('+'))
+            alarm_keyword_set = get_alarm_keyword_set(target_board_title_list, keywords_set)
+            if alarm_keyword_set:
+                keyword_tokens[device.id] = ' · '.join(alarm_keyword_set)
 
-            # orders = ['-date','-created_at','-id']
-            # notice_queryset = queryset.filter(reduce(operator.or_, (Q(title__icontains=x) for x in qeurys))).order_by(*orders)
-            # keywords_set = set(device.keywords.split('+'))
+    if keyword_tokens:
+        '''
+        Condition:
+        1. 키워드 알람을 켜고, 구독중인 학과에서 설정해 놓은 키워드(keyword_tokens)가 존재할때
+
+        messaging.send_all() -> Maximum target: 500
+        https://firebase.google.com/docs/cloud-messaging/send-message?hl=ko#send-a-batch-of-messages
+        '''
+        messages = []
+        reg_keys = list(keyword_tokens.keys())
+        reg_values = list(keyword_tokens.values())
+        for device_id, to_body in zip(reg_keys, reg_values):
+            messages.append(
+                messaging.Message(
+                    data=data,
+                    token=device_id,
+                    notification=messaging.Notification(title='설정된 키워드를 가진 공지가 올라왔어요!', body=to_body),
+                    android=messaging.AndroidConfig(priority='high')
+                )
+            )
+        check_fcm_response(messaging.send_all(messages), reg_keys)
 
     if subscription_tokens:
         '''
