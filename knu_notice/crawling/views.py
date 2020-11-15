@@ -1,3 +1,4 @@
+from collections import defaultdict
 from distutils import util
 from functools import reduce
 import operator
@@ -62,12 +63,15 @@ def push(request, *arg, **kwarg):
         msg, code = crawling_task.call_push_alarm(is_broadcast=True)
     else:
         if targets=='all':
-            target_board_code_list = models.Notice.objects.all().values_list('site', flat=True)
+            target_board_code_list = _get_available_boards()
         elif targets:
             target_board_code_list = targets.split()
         else:
             target_board_code_list = []
-        msg, code = crawling_task.call_push_alarm(target_board_code_list=target_board_code_list)
+        target_board_dic = defaultdict()
+        for code in target_board_code_list:
+            target_board_dic[code] = set()
+        msg, code = crawling_task.call_push_alarm(target_board_dic=target_board_dic)
     return Response(
         data=msg, 
         status=code
