@@ -1,6 +1,6 @@
 beautifulsoup4==4.9.1
 billiard==3.6.3.0
-celery==4.4.2
+celery==5.0.2
 Django==3.1
 djangorestframework==3.11.0
 django-allauth==0.42.0
