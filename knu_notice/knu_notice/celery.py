@@ -31,5 +31,6 @@ def config_loggers(*args, **kwags):
     from logging.config import dictConfig
     from django.conf import settings
     dictConfig(settings.LOGGING)
+    logger = logging.getLogger('celery')
 
 app.autodiscover_tasks()

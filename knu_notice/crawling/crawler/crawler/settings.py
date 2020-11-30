@@ -13,8 +13,8 @@ SPLASH_URL = 'http://splash:8050'
 DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
 HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
 
-LOG_LEVEL = 'DEBUG'
-LOG_FILE = 'scrapy.log'
+# LOG_LEVEL = 'DEBUG'
+# LOG_FILE = 'scrapy.log'
 
 BOT_NAME = 'crawler'
 
