@@ -2,6 +2,7 @@
 from typing import Dict, List, Tuple
 import datetime
 from urllib.parse import urljoin
+import logging
 import re
 import requests
 import zlib
@@ -11,6 +12,7 @@ import scrapy
 from scrapy.http.request import Request
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.response import get_base_url
+from scrapy.utils.log import configure_logging 
 from scrapy_splash import SplashRequest
 from crawling.data import data
 from .LinkExtractor import MyLinkExtractor
@@ -287,6 +289,11 @@ for key, item in data.items():
         txt = f"""
 class {key.capitalize()}Spider(DefaultSpider):
     def __init__(self, **kwargs):
+        from logging.config import dictConfig
+        from django.conf import settings
+        dictConfig(settings.LOGGING)
+        logger = logging.getLogger('scrapy')
+
         from crawling.data import data
         args = data['{key}']
         self.try_time = 0

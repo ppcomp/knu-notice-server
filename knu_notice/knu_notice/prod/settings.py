@@ -19,28 +19,41 @@ WSGI_APPLICATION = 'knu_notice.prod.wsgi.application'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {
-        'default': {
-            'format': u'[%(levelname)s|%(filename)s:%(lineno)s] %(asctime)s > %(message)s'
+    "formatters": {
+        "simple": {"format": "[%(name)s] %(message)s"},
+        "complex": {
+            "format": "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] - %(message)s",
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
     'handlers': {
-        'console_celery': {
-            'level': 'ERROR',
+        'console': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'default'
+            'formatter': 'simple'
         },
         'file_celery': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'celery.log',
-            'formatter': 'default',
+            'formatter': 'complex',
+            'maxBytes': 1024 * 1024 * 100,  # 100 mb
+        },
+        'file_scrapy': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'scrapy.log',
+            'formatter': 'complex',
             'maxBytes': 1024 * 1024 * 100,  # 100 mb
         },
     },
     'loggers': {
         'celery': {
-            'handlers': ['file_celery', 'console_celery'],
+            'handlers': ['console', 'file_celery'],
+            'level': 'DEBUG',
+        },
+        'scrapy': {
+            'handlers': ['console', 'file_scrapy'],
             'level': 'DEBUG',
         },
     }
