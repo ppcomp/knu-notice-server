@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from .models import Device, User
-from . import serializer
+from . import serializer as serializers
 
 def get_object(model, pk):
     try:
@@ -28,7 +28,7 @@ class DeviceList(mixins.ListModelMixin,
                  mixins.UpdateModelMixin,
                  generics.GenericAPIView):
     queryset = Device.objects.all()
-    serializer_class = serializer.DeviceSerializer
+    serializer_class = serializers.DeviceSerializer
 
     # permission_classes = [IsAdminUser,] # 활성화시 admin 계정만 접근 가능
     # authentication_classes = [JSONWebTokenAuthentication,] # 활성화시 admin 계정만 접근 가능
@@ -50,7 +50,8 @@ class Account(generics.GenericAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        json_data = get_json_data(request)
+        serializer = self.get_serializer(data=json_data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -74,21 +75,11 @@ class Account(generics.GenericAPIView):
 
 class DeviceView(Account):
 
-    serializer_class = serializer.DeviceSerializer
+    serializer_class = serializers.DeviceSerializer
     model = Device
 
 
 class UserView(Account):
 
-    serializer_class = serializer.UserFormSerializer
+    serializer_class = serializers.UserSerializer
     model = User
-
-    def post(self, request, *args, **kwargs):
-        json_data = get_json_data(request)
-        device = get_object(Device, str(json_data['device_id']))
-        json_data['device'] = device
-        user_serializer = serializer.UserSerializer(data=json_data)
-        if user_serializer.is_valid():
-            user_serializer.save()
-            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
-        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
