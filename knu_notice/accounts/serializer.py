@@ -53,12 +53,3 @@ class UserSerializer(DynamicFieldsModelSerializer):
             'email',
             'device',
         ]
-
-class UserFormSerializer(DynamicFieldsModelSerializer):
-    class Meta:
-        model = User
-        fields= [
-            'id',
-            'email',
-            'device_id',
-        ]
