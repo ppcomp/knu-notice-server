@@ -2,6 +2,7 @@ version: '3'
     
 services:
     splash:
+        restart: unless-stopped
         image: scrapinghub/splash:3.5.0
         container_name: splash01
         ports:
@@ -10,6 +11,7 @@ services:
         #     driver: none
 
     nginx:
+        restart: unless-stopped
         image: nginx:1.17.10
         container_name: nginx01
         ports:
@@ -23,19 +25,21 @@ services:
             - web
 
     web:
+        restart: unless-stopped
         build: .
         container_name: web01
         command: bash -c "
             python manage_prod.py collectstatic --no-input &&
             python manage_prod.py makemigrations && 
             python manage_prod.py migrate &&
-            gunicorn knu_notice.prod.wsgi -b 0:8080"
+            gunicorn knu_notice.prod.wsgi -b 0:8080 --reload"
         volumes:
             - ./knu_notice:/home/knu_notice
         links:
             - redis
 
     celery:
+        restart: unless-stopped
         build: .
         container_name: celery01
         command: celery --app crawling.celery_tasks.crawling_task worker --pidfile= --without-gossip --without-mingle --without-heartbeat -Ofair
@@ -46,6 +50,7 @@ services:
         env_file: ./config/celery/prod.conf
 
     celery-beat:
+        restart: unless-stopped
         build: .
         container_name: celery-beat01
         command: celery --app crawling.celery_tasks.crawling_task beat --pidfile=
@@ -56,6 +61,7 @@ services:
         env_file: ./config/celery/prod.conf
 
     redis:
+        restart: unless-stopped
         image: redis:6.0-rc4
         container_name: redis01
         ports:

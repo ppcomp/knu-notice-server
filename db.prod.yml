@@ -2,6 +2,7 @@ version: '3'
     
 services:
     pgadmin:
+        restart: unless-stopped
         image: dpage/pgadmin4:4.21
         container_name: pgadmin01
         environment:
@@ -12,6 +13,7 @@ services:
             - db
 
     db:
+        restart: unless-stopped
         image: postgres:12.2
         container_name: db01
         ports:
