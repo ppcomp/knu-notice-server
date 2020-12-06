@@ -50,11 +50,11 @@ LOGGING = {
     'loggers': {
         'celery': {
             'handlers': ['console', 'file_celery'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'scrapy': {
             'handlers': ['console', 'file_scrapy'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
     }
 }
