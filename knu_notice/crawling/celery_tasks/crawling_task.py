@@ -88,8 +88,10 @@ def call_push_alarm(
     code = status.HTTP_200_OK
 
     broadcast_tokens = []
-    subscription_tokens = dict()
-    keyword_tokens = dict()
+    sub_tokens_names = dict()
+    sub_tokens_codes = dict()
+    key_tokens_ver1 = dict()
+    key_tokens_ver2 = dict()
     if is_broadcast:
         target_device_list = list(accounts_models.Device.objects.all()
             .filter(alarm_switch=True)
@@ -104,13 +106,15 @@ def call_push_alarm(
             subscriptions_set = set(device.subscriptions.split('+'))
             target_list = list(subscriptions_set & target_board_code_set)
             if target_list:
-                subscription_tokens[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
+                sub_tokens_names[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
+                sub_tokens_codes[device.id] = '-'.join(target_list)
             keywords_set = set(device.keywords.split('+'))
             alarm_keyword_set = get_alarm_keyword_set(target_board_title_list, keywords_set)
             if alarm_keyword_set:
-                keyword_tokens[device.id] = ' · '.join(alarm_keyword_set)
+                key_tokens_ver1[device.id] = ' · '.join(alarm_keyword_set)
+                key_tokens_ver2[device.id] = '-'.join(alarm_keyword_set)
 
-    if keyword_tokens:
+    if key_tokens_ver1:
         '''
         Condition:
         1. 키워드 알람을 켜고, 구독중인 학과에서 설정해 놓은 키워드(keyword_tokens)가 존재할때
@@ -119,12 +123,12 @@ def call_push_alarm(
         https://firebase.google.com/docs/cloud-messaging/send-message?hl=ko#send-a-batch-of-messages
         '''
         messages = []
-        reg_keys = list(keyword_tokens.keys())
-        reg_values = list(keyword_tokens.values())
+        reg_keys = list(key_tokens_ver1.keys())
+        reg_values = list(key_tokens_ver1.values())
         for device_id, to_body in zip(reg_keys, reg_values):
             messages.append(
                 messaging.Message(
-                    data=data,
+                    data={'keys':key_tokens_ver2[device_id]},
                     token=device_id,
                     notification=messaging.Notification(title='설정된 키워드를 가진 공지가 올라왔어요!', body=to_body),
                     android=messaging.AndroidConfig(priority='high')
@@ -132,7 +136,7 @@ def call_push_alarm(
             )
         check_fcm_response(messaging.send_all(messages), reg_keys)
 
-    if subscription_tokens:
+    if sub_tokens_names:
         '''
         Condition:
         1. is_broadcast=False
@@ -142,12 +146,12 @@ def call_push_alarm(
         https://firebase.google.com/docs/cloud-messaging/send-message?hl=ko#send-a-batch-of-messages
         '''
         messages = []
-        reg_keys = list(subscription_tokens.keys())
-        reg_values = list(subscription_tokens.values())
+        reg_keys = list(sub_tokens_names.keys())
+        reg_values = list(sub_tokens_names.values())
         for device_id, to_body in zip(reg_keys, reg_values):
             messages.append(
                 messaging.Message(
-                    data=data,
+                    data={'sub_codes':sub_tokens_codes[device_id]},
                     token=device_id,
                     notification=messaging.Notification(title=title, body=to_body),
                     android=messaging.AndroidConfig(priority='high')
