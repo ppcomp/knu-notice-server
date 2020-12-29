@@ -71,6 +71,7 @@ class Device(models.Model):
     id_method = models.CharField(max_length=30, default='InstanceId', blank=True)
     keywords = models.CharField(max_length=500, blank=True)
     subscriptions = models.CharField(max_length=500, blank=True)
-    alarm_switch = models.BooleanField(default=False)
+    alarm_switch_sub = models.BooleanField(default=False)
+    alarm_switch_key = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -32,7 +32,8 @@ class DeviceSerializer(DynamicFieldsModelSerializer):
             'id_method',
             'keywords',
             'subscriptions',
-            'alarm_switch',
+            'alarm_switch_sub',
+            'alarm_switch_key',
         ]
         
     def validate(self, attrs):
