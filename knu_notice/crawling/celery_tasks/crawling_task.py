@@ -94,25 +94,27 @@ def call_push_alarm(
     key_tokens_ver2 = dict()
     if is_broadcast:
         target_device_list = list(accounts_models.Device.objects.all()
-            .filter(alarm_switch=True)
+            .filter(alarm_switch_sub=True)
             .values_list('id', flat=True)
         )
         broadcast_tokens = target_device_list
     else:
         target_board_code_set = set(target_board_dic.keys())
         target_board_title_list = list(target_board_dic.values())
-        devices = accounts_models.Device.objects.all().exclude(alarm_switch=False)
+        devices = accounts_models.Device.objects.all()
         for device in devices:
-            subscriptions_set = set(device.subscriptions.split('+'))
-            target_list = list(subscriptions_set & target_board_code_set)
-            if target_list:
-                sub_tokens_names[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
-                sub_tokens_codes[device.id] = '-'.join(target_list)
-            keywords_set = set(device.keywords.split('+'))
-            alarm_keyword_set = get_alarm_keyword_set(target_board_title_list, keywords_set)
-            if alarm_keyword_set:
-                key_tokens_ver1[device.id] = ' · '.join(alarm_keyword_set)
-                key_tokens_ver2[device.id] = '-'.join(alarm_keyword_set)
+            if device.alarm_switch_sub:
+                subscriptions_set = set(device.subscriptions.split('+'))
+                target_list = list(subscriptions_set & target_board_code_set)
+                if target_list:
+                    sub_tokens_names[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
+                    sub_tokens_codes[device.id] = '-'.join(target_list)
+            if device.alarm_switch_key:
+                keywords_set = set(device.keywords.split('+'))
+                alarm_keyword_set = get_alarm_keyword_set(target_board_title_list, keywords_set)
+                if alarm_keyword_set:
+                    key_tokens_ver1[device.id] = ' · '.join(alarm_keyword_set)
+                    key_tokens_ver2[device.id] = '-'.join(alarm_keyword_set)
 
     if key_tokens_ver1:
         '''
