@@ -169,7 +169,10 @@ def call_push_alarm(
             )
             messages_data.append(
                 messaging.Message(
-                    data={'sub_codes':sub_tokens_codes[device_id]},
+                    data={
+                        'sub_codes':sub_tokens_codes[device_id],
+                        'sub_names':sub_tokens_names[device_id],
+                    },
                     token=device_id,
                     android=messaging.AndroidConfig(priority='high')
                 )
