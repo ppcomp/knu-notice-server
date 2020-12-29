@@ -122,19 +122,27 @@ def call_push_alarm(
         messaging.send_all() -> Maximum target: 500
         https://firebase.google.com/docs/cloud-messaging/send-message?hl=ko#send-a-batch-of-messages
         '''
-        messages = []
+        messages_notification = []
+        messages_data = []
         reg_keys = list(key_tokens_ver1.keys())
         reg_values = list(key_tokens_ver1.values())
         for device_id, to_body in zip(reg_keys, reg_values):
-            messages.append(
+            messages_notification.append(
                 messaging.Message(
-                    data={'keys':key_tokens_ver2[device_id]},
                     token=device_id,
                     notification=messaging.Notification(title='설정된 키워드를 가진 공지가 올라왔어요!', body=to_body),
                     android=messaging.AndroidConfig(priority='high')
                 )
             )
-        check_fcm_response(messaging.send_all(messages), reg_keys)
+            messages_data.append(
+                messaging.Message(
+                    data={'keys':key_tokens_ver2[device_id]},
+                    token=device_id,
+                    android=messaging.AndroidConfig(priority='high')
+                )
+            )
+        check_fcm_response(messaging.send_all(messages_notification), reg_keys)
+        check_fcm_response(messaging.send_all(messages_data), reg_keys)
 
     if sub_tokens_names:
         '''
@@ -145,19 +153,27 @@ def call_push_alarm(
         messaging.send_all() -> Maximum target: 500
         https://firebase.google.com/docs/cloud-messaging/send-message?hl=ko#send-a-batch-of-messages
         '''
-        messages = []
+        messages_notification = []
+        messages_data = []
         reg_keys = list(sub_tokens_names.keys())
         reg_values = list(sub_tokens_names.values())
         for device_id, to_body in zip(reg_keys, reg_values):
-            messages.append(
+            messages_notification.append(
                 messaging.Message(
-                    data={'sub_codes':sub_tokens_codes[device_id]},
                     token=device_id,
                     notification=messaging.Notification(title=title, body=to_body),
                     android=messaging.AndroidConfig(priority='high')
                 )
             )
-        check_fcm_response(messaging.send_all(messages), reg_keys)
+            messages_data.append(
+                messaging.Message(
+                    data={'sub_codes':sub_tokens_codes[device_id]},
+                    token=device_id,
+                    android=messaging.AndroidConfig(priority='high')
+                )
+            )
+        check_fcm_response(messaging.send_all(messages_notification), reg_keys)
+        check_fcm_response(messaging.send_all(messages_data), reg_keys)
     elif broadcast_tokens:
         '''
         Condition:
@@ -167,13 +183,18 @@ def call_push_alarm(
         Maximum target: 100
         https://firebase.google.com/docs/reference/admin/dotnet/class/firebase-admin/messaging/multicast-message
         '''
-        message = messaging.MulticastMessage(
-            data=data,
+        message_notification = messaging.MulticastMessage(
             tokens=broadcast_tokens,
             notification=messaging.Notification(title=title, body=body),
             android=messaging.AndroidConfig(priority='normal')
         )
-        check_fcm_response(messaging.send_multicast(message), broadcast_tokens)
+        message_data = messaging.MulticastMessage(
+            data=data,
+            tokens=broadcast_tokens,
+            android=messaging.AndroidConfig(priority='normal')
+        )
+        check_fcm_response(messaging.send_multicast(message_notification), broadcast_tokens)
+        check_fcm_response(messaging.send_multicast(message_data), broadcast_tokens)
     else:
         msg = "There is no target devices."
     return msg, code
