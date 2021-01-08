@@ -3,11 +3,13 @@ from typing import Dict, List, Tuple
 import datetime
 from urllib.parse import urljoin
 import logging
+from logging.config import dictConfig
 import re
 import requests
 import zlib
 
 from bs4 import BeautifulSoup
+from django.conf import settings
 import scrapy
 from scrapy.http.request import Request
 from scrapy.linkextractors import LinkExtractor
@@ -283,9 +285,12 @@ class DefaultSpider(scrapy.Spider):
         self.output_callback(self.scraped_info_data)
 
 page_num = 1
+manual_spiders = {
+    'knudorm'
+}
 # Spider Class 자동 생성
 for key, item in data.items():
-    if key.find('test') == -1:
+    if 'test' not in key and key not in manual_spiders:
         txt = f"""
 class {key.capitalize()}Spider(DefaultSpider):
     def __init__(self, **kwargs):
@@ -316,3 +321,28 @@ class {key.capitalize()}Spider(DefaultSpider):
         super().set_args(args)
 """
         exec(compile(txt,"<string>","exec"))
+
+
+class KnudormSpider(DefaultSpider):
+    def __init__(self, **kwargs):
+        dictConfig(settings.LOGGING)
+        logger = logging.getLogger('scrapy')
+        args = data['knudorm']
+        self.try_time = 0
+        self.name = args['name']
+        self.start_urls = [args['start_urls']]
+        self.output_callback = kwargs.get('args').get('callback')
+        self.scraped_info_data = []
+        super().__init__(**kwargs)
+        super().set_args(args)
+
+    # Override
+    # Link 객체에서 url과 id 추출
+    def split_id_and_link(self, links: List[str]) -> Tuple[List[str],List[str]]:
+        ids = []
+        urls = []
+        for link in links:
+            id = ''.join(filter(str.isdigit, link))
+            ids.append(f'{self.name}-{id}')
+            urls.append(f'http://knudorm.kangwon.ac.kr/dorm/bbs/bbsView.knu?newPopup=true&articleId={id}')
+        return ids, urls
