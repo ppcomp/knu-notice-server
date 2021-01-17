@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # app
     'crawling',
     'accounts',
+    'support',
 ]
 SITE_ID = 1
 MIDDLEWARE = [
