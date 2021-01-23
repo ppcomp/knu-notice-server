@@ -66,14 +66,19 @@ def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> DefaultDict[s
     models.Notice.objects.all().filter(id__in=set(notice_id_list)).update(is_fixed=True)
     return target_board_dic
 
-def get_alarm_keyword_set(target_board_title_list, keywords_set):
-    alarm_keyword_set = set()
-    for keyword in keywords_set:
-        for title in target_board_title_list:
-            if keyword in title:
-                alarm_keyword_set.add(keyword)
-                break
-    return alarm_keyword_set
+def get_alarm_keyword_dic(board_data, selected_target_dic, keywords_set, keyword_cache):
+    alarm_keyword_dic = defaultdict(list)
+    for code, titles in selected_target_dic.items():
+        for keyword in keywords_set:
+            if keyword in keyword_cache[code]:
+                alarm_keyword_dic[board_data[code]['name']].append(keyword)
+                continue
+            for title in titles:
+                if keyword in title:
+                    keyword_cache[code].add(keyword)
+                    alarm_keyword_dic[board_data[code]['name']].append(keyword)
+                    break
+    return alarm_keyword_dic
 
 def call_push_alarm(
     target_board_dic: DefaultDict[str,set] = defaultdict(set),
@@ -83,15 +88,16 @@ def call_push_alarm(
     body='지금 어플을 열어 확인해 보세요!') -> Tuple[str,str]:
     from accounts import models as accounts_models
     from crawling.data import data as board_data
-    
+
     msg = "Push success."
     code = status.HTTP_200_OK
 
     broadcast_tokens = []
     sub_tokens_names = dict()
     sub_tokens_codes = dict()
-    key_tokens_ver1 = dict()
+    key_tokens_ver1 = defaultdict(str)
     key_tokens_ver2 = dict()
+    keyword_cache = defaultdict(set)
     if is_broadcast:
         target_device_list = list(accounts_models.Device.objects.all()
             .filter(alarm_switch_sub=True)
@@ -100,21 +106,21 @@ def call_push_alarm(
         broadcast_tokens = target_device_list
     else:
         target_board_code_set = set(target_board_dic.keys())
-        target_board_title_list = list(target_board_dic.values())
         devices = accounts_models.Device.objects.all()
         for device in devices:
-            if device.alarm_switch_sub:
-                subscriptions_set = set(device.subscriptions.split('+'))
-                target_list = list(subscriptions_set & target_board_code_set)
-                if target_list:
-                    sub_tokens_names[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], target_list)))
-                    sub_tokens_codes[device.id] = '-'.join(target_list)
+            subscriptions_set = set(device.subscriptions.split('+'))
+            selected_target_list = list(subscriptions_set & target_board_code_set)
+            if device.alarm_switch_sub and selected_target_list:
+                sub_tokens_names[device.id] = ' · '.join(list(map(lambda x: board_data[x]['name'], selected_target_list)))
+                sub_tokens_codes[device.id] = '-'.join(selected_target_list)
             if device.alarm_switch_key:
+                selected_target_dic = {x:target_board_dic[x] for x in selected_target_list}
                 keywords_set = set(device.keywords.split('+'))
-                alarm_keyword_set = get_alarm_keyword_set(target_board_title_list, keywords_set)
-                if alarm_keyword_set:
-                    key_tokens_ver1[device.id] = ' · '.join(alarm_keyword_set)
-                    key_tokens_ver2[device.id] = '-'.join(alarm_keyword_set)
+                alarm_keyword_dic = get_alarm_keyword_dic(board_data, selected_target_dic, keywords_set, keyword_cache)
+                if alarm_keyword_dic:
+                    for name, keywords in alarm_keyword_dic.items():
+                        key_tokens_ver1[device.id] += f"{name}: {' · '.join(keywords)} \n"
+                    key_tokens_ver2[device.id] = '-'.join(alarm_keyword_dic.keys())
 
     if key_tokens_ver1:
         '''
@@ -133,14 +139,14 @@ def call_push_alarm(
                 messaging.Message(
                     token=device_id,
                     notification=messaging.Notification(title='설정된 키워드를 가진 공지가 올라왔어요!', body=to_body),
-                    android=messaging.AndroidConfig(priority='high')
+                    android=messaging.AndroidConfig(priority='high', collapse_key="key"),
                 )
             )
             messages_data.append(
                 messaging.Message(
                     data={'keys':key_tokens_ver2[device_id]},
                     token=device_id,
-                    android=messaging.AndroidConfig(priority='high')
+                    android=messaging.AndroidConfig(priority='high'),
                 )
             )
         check_fcm_response(messaging.send_all(messages_notification), reg_keys)
@@ -164,7 +170,7 @@ def call_push_alarm(
                 messaging.Message(
                     token=device_id,
                     notification=messaging.Notification(title=title, body=to_body),
-                    android=messaging.AndroidConfig(priority='high')
+                    android=messaging.AndroidConfig(priority='high', collapse_key="sub"),
                 )
             )
             messages_data.append(
@@ -174,7 +180,7 @@ def call_push_alarm(
                         'sub_names':sub_tokens_names[device_id],
                     },
                     token=device_id,
-                    android=messaging.AndroidConfig(priority='high')
+                    android=messaging.AndroidConfig(priority='high'),
                 )
             )
         check_fcm_response(messaging.send_all(messages_notification), reg_keys)
@@ -191,12 +197,12 @@ def call_push_alarm(
         message_notification = messaging.MulticastMessage(
             tokens=broadcast_tokens,
             notification=messaging.Notification(title=title, body=body),
-            android=messaging.AndroidConfig(priority='normal')
+            android=messaging.AndroidConfig(priority='normal', collapse_key="sub"),
         )
         message_data = messaging.MulticastMessage(
             data=data,
             tokens=broadcast_tokens,
-            android=messaging.AndroidConfig(priority='normal')
+            android=messaging.AndroidConfig(priority='normal'),
         )
         check_fcm_response(messaging.send_multicast(message_notification), broadcast_tokens)
         check_fcm_response(messaging.send_multicast(message_data), broadcast_tokens)
