@@ -7,8 +7,8 @@ services:
         container_name: splash01
         ports:
             - "8050:8050"
-        # logging:
-        #     driver: none
+        logging:
+            driver: none
 
     nginx:
         restart: always
