@@ -35,9 +35,9 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
     print(f"{time.strftime('%y-%m-%d %H:%M:%S')} call_push_alarm started.")
     call_push_alarm(target_board_dic)
 
-def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> DefaultDict[str,set]:
+def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> DefaultDict[str,list]:
     from crawling import models
-    target_board_dic = defaultdict(set)
+    target_board_dic = defaultdict(list)
     notice_id_list = []
     for board_code, item_list in boards_data.items():
         model = eval(f"models.{board_code.capitalize()}")
@@ -58,7 +58,7 @@ def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> DefaultDict[s
             #created = True: DB에 저장된 같은 데이터가 없음 (Create)
             #created = False: DB에 저장된 같은 데이터가 있음 (Get)
             if created:
-                target_board_dic[item['site']].add(item['title'])
+                target_board_dic[item['site']].append(item['title'])
                 print(f"new Data insert! {item['site']}:{item['title']}")
             else:
                 if notice.is_fixed != is_fixed:
@@ -81,10 +81,10 @@ def get_alarm_keyword_dic(board_data, selected_target_dic, keywords_set, keyword
     return alarm_keyword_dic
 
 def call_push_alarm(
-    target_board_dic: DefaultDict[str,set] = defaultdict(set),
+    target_board_dic: DefaultDict[str,list] = defaultdict(set),
     is_broadcast: bool=False,
     data=dict(),
-    title='새 공지가 추가되었습니다.',
+    title='새 공지가 올라왔어요!',
     body='지금 어플을 열어 확인해 보세요!') -> Tuple[str,str]:
     from accounts import models as accounts_models
     from crawling.data import data as board_data
@@ -119,7 +119,7 @@ def call_push_alarm(
                 alarm_keyword_dic = get_alarm_keyword_dic(board_data, selected_target_dic, keywords_set, keyword_cache)
                 if alarm_keyword_dic:
                     for name, keywords in alarm_keyword_dic.items():
-                        key_tokens_ver1[device.id] += f"{name}: {' · '.join(keywords)} \n"
+                        key_tokens_ver1[device.id] += f"{name}: {', '.join(keywords)} \n"
                     key_tokens_ver2[device.id] = '-'.join(alarm_keyword_dic.keys())
 
     if key_tokens_ver1:
