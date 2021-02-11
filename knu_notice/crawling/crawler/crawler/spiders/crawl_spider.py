@@ -310,7 +310,10 @@ class {key.capitalize()}Spider(DefaultSpider):
                 url_page = url + '/' + '%d'
             else:
                 url_page = url + '&' + args['page'] + '=%d'
-            urls = [url_page % i for i in range(1, page_num+1)]
+            if args['page'] == 'offset':
+                urls = [url_page % ((i-1)*20) for i in range(1, page_num+1)]
+            else:
+                urls = [url_page % i for i in range(1, page_num+1)]
             self.start_urls = urls
         else:
             self.start_urls = [args['start_urls']]
