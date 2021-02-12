@@ -128,5 +128,5 @@ spiders = [
 
     # 2차 추가
     # crawl_spider.JobSpider,           # link is invalid. All same.
-    # crawl_spider.LibrarySpider,       # memory explosion.
+    crawl_spider.LibrarySpider, 
 ]
