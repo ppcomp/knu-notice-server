@@ -128,5 +128,11 @@ spiders = [
 
     # 2차 추가
     # crawl_spider.JobSpider,           # link is invalid. All same.
-    crawl_spider.LibrarySpider, 
+    crawl_spider.LibrarySpider,
+
+    # 3차 추가
+    crawl_spider.SmedSpider,
+    crawl_spider.KnuchildSpider,
+    crawl_spider.GraduateSpider,
+    crawl_spider.MhaksaSpider,
 ]
