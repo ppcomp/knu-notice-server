@@ -135,4 +135,5 @@ spiders = [
     crawl_spider.KnuchildSpider,
     crawl_spider.GraduateSpider,
     crawl_spider.MhaksaSpider,
+    crawl_spider.MjanghakSpider,
 ]
