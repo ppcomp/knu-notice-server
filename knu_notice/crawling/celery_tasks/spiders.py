@@ -131,7 +131,7 @@ spiders = [
     crawl_spider.LibrarySpider,
 
     # 3차 추가
-    crawl_spider.SmedSpider,
+    # crawl_spider.SmedSpider,          # table is empty.
     crawl_spider.KnuchildSpider,
     crawl_spider.GraduateSpider,
     crawl_spider.MhaksaSpider,
