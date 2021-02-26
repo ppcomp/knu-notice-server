@@ -106,6 +106,8 @@ class DefaultSpider(scrapy.Spider):
         for url in urls:
             if self.id == 'restful':
                 idx = url.rfind('/')+1
+                if url[idx] == '?':
+                    idx = url[:idx-1].rfind('/')+1
             else:
                 idx = url.rfind(self.id+'=')+len(self.id)+1
             for i in range(idx, len(url)):
@@ -308,6 +310,8 @@ class {key.capitalize()}Spider(DefaultSpider):
             url:str = args['start_urls']
             if args['page'] == 'restful':
                 url_page = url + '/' + '%d'
+            elif args['page'] == 'offset':
+                url_page = url
             else:
                 url_page = url + '&' + args['page'] + '=%d'
             if args['page'] == 'offset':
