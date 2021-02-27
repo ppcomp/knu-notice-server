@@ -14,7 +14,7 @@ from .spiders import spiders
 from .single_crawling_task import single_crawling_task
 
 @app.task
-def crawling_task(page_num, spider_idx=-1, cron=False):
+def crawling_task(page_num, spider_idx=-1, is_alarm=True, cron=False):
     print(f"{time.strftime('%y-%m-%d %H:%M:%S')} crawling_task started.")
     if cron:
         from crawling import models    # lazy import
@@ -32,8 +32,9 @@ def crawling_task(page_num, spider_idx=-1, cron=False):
     print(f"{time.strftime('%y-%m-%d %H:%M:%S')} save_data_to_db started.")
     target_board_dic = save_data_to_db(result_dic)
 
-    print(f"{time.strftime('%y-%m-%d %H:%M:%S')} call_push_alarm started.")
-    call_push_alarm(target_board_dic)
+    if is_alarm:
+        print(f"{time.strftime('%y-%m-%d %H:%M:%S')} call_push_alarm started.")
+        call_push_alarm(target_board_dic)
 
 def save_data_to_db(boards_data: Dict[str,List[Dict[str,str]]]) -> DefaultDict[str,list]:
     from crawling import models
