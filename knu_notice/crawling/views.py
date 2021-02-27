@@ -35,19 +35,21 @@ def init(request, *arg, **kwarg):
     msg = "Database will be initialized. All board notices are being crawled."
     code = status.HTTP_200_OK
     from crawling.celery_tasks import crawling_task, spiders
+    alarm = request.GET.get('alarm', None)
+    is_alarm = False if alarm and not util.strtobool(alarm) else True
     if 'board' in kwarg.keys():
         board = f"{kwarg['board'].capitalize()}Spider"
         is_crawled = False
         for i in range(len(spiders.spiders)):
             if spiders.spiders[i].__name__ == board:
-                crawling_task.crawling_task.apply_async(args=(kwarg['pages'], i), queue='crawling_tasks')
+                crawling_task.crawling_task.apply_async(args=(kwarg['pages'], i, is_alarm), queue='crawling_tasks')
                 is_crawled = True
                 break
         if not is_crawled:
             msg = "Invalid board name. Request with correct board name to initialize Database."
             code = status.HTTP_400_BAD_REQUEST
     else:
-        crawling_task.crawling_task.apply_async(args=(kwarg['pages'], -1), queue='crawling_tasks')
+        crawling_task.crawling_task.apply_async(args=(kwarg['pages'], -1, is_alarm), queue='crawling_tasks')
 
     return Response(
         data=msg, 
