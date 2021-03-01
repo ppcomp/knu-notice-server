@@ -15,7 +15,7 @@ app.conf.beat_schedule = {
     'crawling_task': {
         'task': 'crawling.celery_tasks.crawling_task.crawling_task',
         'schedule': crontab(minute=0, hour='*/1'), # timedelta(seconds=900),
-        'args': (1,-1,True),
+        'args': (1,-1,True,True),
         'options': {'queue' : 'crawling_tasks'},
     }
 }
