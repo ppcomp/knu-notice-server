@@ -30,7 +30,7 @@ def single_crawling_task(page_num, spider_idx):
     )
     try_time = 0
     is_success = False
-    while try_time < 5 and not is_success:
+    while try_time < 2 and not is_success:
         try:
             proc.start()
             proc.join()
@@ -38,7 +38,7 @@ def single_crawling_task(page_num, spider_idx):
         except Exception as e:
             print(e)
             try_time += 1
-    if try_time == 5:
+    if try_time == 2:
         raise Exception("사이트에 연결하지 못했습니다. {spider.__name__}")
     return dict(return_dic)
 
