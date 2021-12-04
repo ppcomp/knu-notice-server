@@ -14,5 +14,5 @@ pytest-xdist==1.32.0
 pytz==2019.3
 redis==3.4.1
 scrapy==2.1.0
-scrapy-splash==0.7.2
+scrapy-splash==0.8.0
 sqlparse==0.3.1
