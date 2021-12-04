@@ -41,7 +41,7 @@ class DefaultSpider(scrapy.Spider):
         eval(f"models.{item['model']}")
         if link_len == 0:
             # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
-            if self.try_time < 5:
+            if self.try_time < 2:
                 return False
             else:
                 raise Exception(f'{when}, Crawled item is empty! Xpaths and base url is wrong or connection has failed.')
