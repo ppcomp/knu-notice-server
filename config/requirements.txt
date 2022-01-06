@@ -1,5 +1,5 @@
 beautifulsoup4==4.9.1
-celery==5.1.2
+celery==5.2.2
 Django==3.1.13
 djangorestframework==3.11.2
 django-allauth==0.42.0
