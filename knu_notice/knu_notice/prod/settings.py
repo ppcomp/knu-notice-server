@@ -35,14 +35,14 @@ LOGGING = {
         'file_celery': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'celery.log',
+            'filename': 'log/celery.log',
             'formatter': 'complex',
             'maxBytes': 1024 * 1024 * 100,  # 100 mb
         },
         'file_scrapy': {
             'level': 'WARNING',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'scrapy.log',
+            'filename': 'log/scrapy.log',
             'formatter': 'complex',
             'maxBytes': 1024 * 1024 * 100,  # 100 mb
         },

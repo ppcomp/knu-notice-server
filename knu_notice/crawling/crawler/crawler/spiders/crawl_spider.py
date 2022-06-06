@@ -5,19 +5,14 @@ from urllib.parse import urljoin
 import logging
 from logging.config import dictConfig
 import re
-import requests
 import zlib
 
-from bs4 import BeautifulSoup
 from django.conf import settings
 import scrapy
+from scrapy.downloadermiddlewares.retry import get_retry_request
 from scrapy.http.request import Request
-from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.response import get_base_url
-from scrapy.utils.log import configure_logging 
-from scrapy_splash import SplashRequest
 from crawling.data import data
-from .LinkExtractor import MyLinkExtractor
 
 '''
 1. 각 class 구동시 필요한 import 구문은 class 안에 있어야 함.
@@ -27,8 +22,8 @@ from .LinkExtractor import MyLinkExtractor
  (ex cse 게시판은 BID 사용, main 게시판은 nttNo 사용)
 '''
 
-class DefaultSpider(scrapy.Spider):
 
+class DefaultSpider(scrapy.Spider):
     handle_httpstatus_list = [404]
 
     # 데이터 검증
@@ -41,15 +36,13 @@ class DefaultSpider(scrapy.Spider):
         eval(f"models.{item['model']}")
         if link_len == 0:
             # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
-            if self.try_time < 2:
-                return False
-            else:
-                raise Exception(f'{when}, Crawled item is empty! Xpaths and base url is wrong or connection has failed.')
+            return False
         for key, value in item.items():
             if key not in ('model'):
                 if len(value) != link_len:
                     # size check. 크롤링된 데이터들이 길이가 다른 경우
-                    raise Exception(f"{when}, {key} size is not same with link's. ({key} size: {len(value)}, link size: {link_len})")
+                    raise Exception(
+                        f"{when}, {key} size is not same with link's. ({key} size: {len(value)}, link size: {link_len})")
             # if ((key == 'dates' and self.dates_xpath) or
             #     (key == 'authors' and self.authors_xpath) or
             #     (key == 'references' and self.references_xpath)):
@@ -76,13 +69,13 @@ class DefaultSpider(scrapy.Spider):
         if row_idx == -1:
             tag = 'li/'
             row_idx = self.url_xpath.rfind(tag)
-        self.child_url_xpath = './'+self.url_xpath[self.url_xpath.rfind(tag)+3:]
-        self.row_xpath = self.url_xpath[:row_idx+2]
-        self.titles_xpath = './'+titles_xpath[titles_xpath.rfind(tag)+3:]
-        self.is_fixed = './'+is_fixed[is_fixed.rfind(tag)+3:] if is_fixed else None
-        self.dates_xpath = './'+dates_xpath[dates_xpath.rfind(tag)+3:] if dates_xpath else None
-        self.authors_xpath = './'+authors_xpath[authors_xpath.rfind(tag)+3:] if authors_xpath else None
-        self.references_xpath = './'+references_xpath[references_xpath.rfind(tag)+3:] if references_xpath else None
+        self.child_url_xpath = './' + self.url_xpath[self.url_xpath.rfind(tag) + 3:]
+        self.row_xpath = self.url_xpath[:row_idx + 2]
+        self.titles_xpath = './' + titles_xpath[titles_xpath.rfind(tag) + 3:]
+        self.is_fixed = './' + is_fixed[is_fixed.rfind(tag) + 3:] if is_fixed else None
+        self.dates_xpath = './' + dates_xpath[dates_xpath.rfind(tag) + 3:] if dates_xpath else None
+        self.authors_xpath = './' + authors_xpath[authors_xpath.rfind(tag) + 3:] if authors_xpath else None
+        self.references_xpath = './' + references_xpath[references_xpath.rfind(tag) + 3:] if references_xpath else None
 
     # 공백 제거. 가장 선행되어야 하는 전처리
     # How about use strip_html5_whitespace?
@@ -93,25 +86,25 @@ class DefaultSpider(scrapy.Spider):
             x = item
             if x:
                 x = item.strip()
-                x = x.replace('<', '＜').replace('>', '＞') # ㄷ 한자(특수문자)
+                x = x.replace('<', '＜').replace('>', '＞')  # ㄷ 한자(특수문자)
             ret.append(x)
         return ret
 
     # Link 객체에서 url과 id 추출
-    def split_id_and_link(self, links: List[str]) -> Tuple[List[str],List[str]]:
+    def split_id_and_link(self, links: List[str]) -> Tuple[List[str], List[str]]:
         ids = []
         urls = []
         for link in links:
-            urls.append(link+'&')
+            urls.append(link + '&')
         for url in urls:
             if self.id == 'restful':
-                idx = url.rfind('/')+1
+                idx = url.rfind('/') + 1
                 if url[idx] == '?':
-                    idx = url[:idx-1].rfind('/')+1
+                    idx = url[:idx - 1].rfind('/') + 1
             else:
-                idx = url.rfind(self.id+'=')+len(self.id)+1
+                idx = url.rfind(self.id + '=') + len(self.id) + 1
             for i in range(idx, len(url)):
-                if url[i] in ('&','?'):
+                if url[i] in ('&', '?'):
                     break
             id = url[idx:i]
             if len(id) > 20:
@@ -130,9 +123,9 @@ class DefaultSpider(scrapy.Spider):
         fix1 = []
         for date in dates:
             if date:
-                d = date.replace('.','-')               # 2020.05.19 > 2020-05-19
-                d = d.replace('/','-')                  # 2020/05/19 > 2020-05-19
-                d = d.replace('·','-')                  # 2020·05·19 > 2020-05-19
+                d = date.replace('.', '-')  # 2020.05.19 > 2020-05-19
+                d = d.replace('/', '-')  # 2020/05/19 > 2020-05-19
+                d = d.replace('·', '-')  # 2020·05·19 > 2020-05-19
                 fix1.append(d)
             else:
                 fix1.append(date)
@@ -145,16 +138,16 @@ class DefaultSpider(scrapy.Spider):
             type1s = type1.findall(d)
             type2s = type2.findall(d)
             tmp = None
-            if type1s:                                              # 2020-05-19
+            if type1s:  # 2020-05-19
                 try:
                     tmp = datetime.datetime.strptime(type1s[0], "%Y-%m-%d")
                     tmp = tmp.strftime("%Y-%m-%d")
                 except:
                     tmp = None
-            elif type2s:                                            # 20-05-19
+            elif type2s:  # 20-05-19
                 try:
-                    tmp = datetime.datetime.strptime(type2s[0], "%y-%m-%d") # datetime 객체로 변환 (2020-05-19)
-                    tmp = tmp.strftime("%Y-%m-%d")                  # string으로 변환 (2020-05-19)
+                    tmp = datetime.datetime.strptime(type2s[0], "%y-%m-%d")  # datetime 객체로 변환 (2020-05-19)
+                    tmp = tmp.strftime("%Y-%m-%d")  # string으로 변환 (2020-05-19)
                 except:
                     tmp = None
             elif d.find(':') != -1:
@@ -170,17 +163,9 @@ class DefaultSpider(scrapy.Spider):
         scraped_info['date'] = self.date_cleanse([s])[0]
         self.scraped_info_data.append(scraped_info)
 
-    def extend_list(self, arr:List[str], target:int) -> List[str]:
+    def extend_list(self, arr: List[str], target: int) -> List[str]:
         add = [None for i in range(target)]
         return arr + add
-
-    # Override
-    def start_requests(self):
-        for url in self.start_urls:
-            yield SplashRequest(url, self.parse,
-                endpoint='render.html',
-                args={'wait': 0.5},
-            )
 
     # Override
     def parse(self, response):
@@ -197,7 +182,7 @@ class DefaultSpider(scrapy.Spider):
         references = []
 
         for row in row_datas[self.drop:]:
-            child_url = row.xpath(self.child_url_xpath+'/@href')
+            child_url = row.xpath(self.child_url_xpath + '/@href')
             if child_url:
                 links.append(urljoin(base_url, child_url.get()))
                 try:
@@ -238,41 +223,38 @@ class DefaultSpider(scrapy.Spider):
         authors = self.remove_whitespace(authors)
         references = self.remove_whitespace(references)
 
-        dates = self.date_cleanse(dates)        # date 형식에 맞게 조정
-        is_fixeds = self.extend_list(is_fixeds, len(ids)-len(is_fixeds))
-        if self._data_verification(response, {
-            'model':self.model,
-            'ids':ids, 
-            'is_fixeds':is_fixeds,
-            'titles':titles, 
-            'links':links, 
-            'dates':dates, 
-            'authors':authors, 
-            'references':references,
+        dates = self.date_cleanse(dates)  # date 형식에 맞게 조정
+        is_fixeds = self.extend_list(is_fixeds, len(ids) - len(is_fixeds))
+        if not self._data_verification(response, {
+            'model': self.model,
+            'ids': ids,
+            'is_fixeds': is_fixeds,
+            'titles': titles,
+            'links': links,
+            'dates': dates,
+            'authors': authors,
+            'references': references,
         }):
-            self.try_time = 0
-        else:
-            self.try_time += 1
-            yield SplashRequest(response.url, callback=self.parse, dont_filter=True)
-            return
+            return get_retry_request(
+                response.request,
+                max_retry_times=3,
+                spider=self,
+            )
 
         for id, is_fixed, title, link, date, author, reference in zip(
-            ids, is_fixeds, titles, links, dates, authors, references):
+                ids, is_fixeds, titles, links, dates, authors, references):
             scraped_info = {
-                'id' : id,
-                'site' : self.model.lower(),
-                'is_fixed' : is_fixed,
-                'title' : title,
-                'link' : link,
-                'date' : date,
-                'author' : author,
-                'reference' : reference,
+                'id': id,
+                'site': self.model.lower(),
+                'is_fixed': is_fixed,
+                'title': title,
+                'link': link,
+                'date': date,
+                'author': author,
+                'reference': reference,
             }
             if not date and self.in_date_xpath:
-                request = SplashRequest(link, callback=self.parse_inside,
-                    endpoint='render.html',
-                    args={'wait': 0.5},
-                )
+                request = Request(link, callback=self.parse_inside)
                 request.meta['scraped_info'] = scraped_info
                 yield request
             else:
@@ -285,6 +267,7 @@ class DefaultSpider(scrapy.Spider):
         # for info in self.scraped_info_data:
         #     print(f"Success! {self.name} {info['date']} {info['title']}")
         self.output_callback(self.scraped_info_data)
+
 
 page_num = 1
 manual_spiders = {
@@ -303,7 +286,6 @@ class {key.capitalize()}Spider(DefaultSpider):
 
         from crawling.data import data
         args = data['{key}']
-        self.try_time = 0
 
         self.name = args['name']
         if args['page']:
@@ -327,7 +309,7 @@ class {key.capitalize()}Spider(DefaultSpider):
         super().__init__(**kwargs)
         super().set_args(args)
 """
-        exec(compile(txt,"<string>","exec"))
+        exec(compile(txt, "<string>", "exec"))
 
 
 class KnudormSpider(DefaultSpider):
@@ -335,7 +317,6 @@ class KnudormSpider(DefaultSpider):
         dictConfig(settings.LOGGING)
         logger = logging.getLogger('scrapy')
         args = data['knudorm']
-        self.try_time = 0
         self.name = args['name']
         self.start_urls = [args['start_urls']]
         self.output_callback = kwargs.get('args').get('callback')
@@ -345,11 +326,11 @@ class KnudormSpider(DefaultSpider):
 
     # Override
     # Link 객체에서 url과 id 추출
-    def split_id_and_link(self, links: List[str]) -> Tuple[List[str],List[str]]:
+    def split_id_and_link(self, links: List[str]) -> Tuple[List[str], List[str]]:
         ids = []
         urls = []
         for link in links:
             id = ''.join(filter(str.isdigit, link))
             ids.append(f'{self.name}-{id}')
-            urls.append(f'http://knudorm.kangwon.ac.kr/dorm/bbs/bbsView.knu?newPopup=true&articleId={id}')
+            urls.append(f'https://knudorm.kangwon.ac.kr/dorm/bbs/bbsView.knu?newPopup=true&articleId={id}')
         return ids, urls

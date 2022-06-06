@@ -29,6 +29,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         ret = ""
         if self.profile:
             ret += f"[{self.profile.nickname}]"
+        elif self.email:
+            ret += f"[{self.email}]"
         ret += str(self.id)
         return ret
     class Meta:

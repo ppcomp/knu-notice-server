@@ -18,6 +18,8 @@ services:
         container_name: db01
         ports:
             - "5432:5432"
+        volumes:
+            - ./.db_data:/var/lib/postgresql/data
         environment:
             - POSTGRES_DB=postgres
             - POSTGRES_USER=postgres

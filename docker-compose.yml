@@ -1,14 +1,6 @@
 version: '3'
     
 services:
-    splash:
-        restart: always
-        image: scrapinghub/splash:3.5.0
-        container_name: splash01
-        ports:
-            - "8050:8050"
-        # logging:
-        #     driver: none
 
     nginx:
         restart: always
@@ -21,8 +13,6 @@ services:
         volumes:
             - ./knu_notice:/home/knu_notice
             - ./config/nginx/:/etc/nginx/conf.d/
-        depends_on:
-            - web
 
     web:
         restart: always
@@ -37,6 +27,9 @@ services:
             - ./knu_notice:/home/knu_notice
         links:
             - redis
+            - celery
+            - celery-beat
+            - nginx
 
     celery:
         restart: always
