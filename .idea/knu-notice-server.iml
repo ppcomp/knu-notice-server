@@ -26,6 +26,7 @@
       <excludeFolder url="file://$MODULE_DIR$/knu_notice/log" />
       <excludeFolder url="file://$MODULE_DIR$/knu_notice/resources" />
       <excludeFolder url="file://$MODULE_DIR$/knu_notice/.static_root" />
+      <excludeFolder url="file://$MODULE_DIR$/knu_notice/crawling/migrations" />
     </content>
     <orderEntry type="jdk" jdkName="Remote Python 3.9.8 Docker Compose (web at [/Users/jungwoo/git/knu-notice-server/docker-compose.yml])" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
