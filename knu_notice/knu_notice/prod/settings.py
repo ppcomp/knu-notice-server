@@ -39,7 +39,7 @@ LOGGING = {
             'filename': 'log/knu-notice.log',
             'when': "midnight",
             'backupCount': 30,
-            'formatter': 'standard',
+            'formatter': 'complex',
         },
         'file_celery': {
             'level': 'INFO',
