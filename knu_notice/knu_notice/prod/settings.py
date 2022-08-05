@@ -32,6 +32,15 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
+        'file': {
+            'level': 'INFO',
+            'encoding': 'utf-8',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'log/knu-notice.log',
+            'when': "midnight",
+            'backupCount': 30,
+            'formatter': 'standard',
+        },
         'file_celery': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
@@ -48,6 +57,10 @@ LOGGING = {
         },
     },
     'loggers': {
+        'django.server': {
+            'level': 'INFO',
+            'handlers': ['console', 'file'],
+        },
         'celery': {
             'handlers': ['console', 'file_celery'],
             'level': 'INFO',
