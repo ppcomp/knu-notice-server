@@ -97,7 +97,7 @@ def get_board_list(request):
     for code in _get_available_boards():
         ret.append({
             'name': data[code]['name'],
-            'api_url': data[code]['api_url'],
+            'api_url': data[code]['api_path'],
         })
     return Response(ret)
 

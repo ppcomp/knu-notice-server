@@ -1,5 +1,6 @@
-import pandas as pd
+from support import models
 
-filename = 'resources/board_data.csv'
-data = pd.read_csv(filename, index_col='code').T
-data = data.where(pd.notnull(data), None).to_dict()
+board_infos = models.BoardInfo.objects.all()
+data = dict()
+for board_info in board_infos:
+    data[board_info.code] = dict(board_info.__dict__)
