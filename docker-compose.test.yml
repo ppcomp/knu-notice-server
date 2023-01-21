@@ -9,6 +9,8 @@ services:
         volumes:
             - ./knu_notice:/home/knu_notice
             - /static:/static
+        environment:
+            PROFILE: test
 
     db:
         image: postgres:12.2

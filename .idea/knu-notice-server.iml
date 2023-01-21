@@ -27,8 +27,10 @@
       <excludeFolder url="file://$MODULE_DIR$/knu_notice/resources" />
       <excludeFolder url="file://$MODULE_DIR$/knu_notice/.static_root" />
       <excludeFolder url="file://$MODULE_DIR$/knu_notice/crawling/migrations" />
+      <excludeFolder url="file://$MODULE_DIR$/.db_data" />
+      <excludeFolder url="file://$MODULE_DIR$/.env" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote Python 3.9.8 Docker Compose (web at [/Users/jungwoo/git/knu-notice-server/docker-compose.yml])" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.9.13 Docker Compose (web at [C:\git\knu-notice-server\docker-compose.yml])" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

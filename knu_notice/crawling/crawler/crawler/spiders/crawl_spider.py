@@ -10,6 +10,7 @@ import zlib
 from django.conf import settings
 import scrapy
 from scrapy.downloadermiddlewares.retry import get_retry_request
+from scrapy.http import Response
 from scrapy.http.request import Request
 from scrapy.utils.response import get_base_url
 from crawling.data import data
@@ -28,11 +29,11 @@ class DefaultSpider(scrapy.Spider):
 
     # 데이터 검증
     def _data_verification(self, response, item: Dict[str, List]):
-        from crawling import models
         when = f'While crawling {self.name}'
         link_len = len(item['links'])
 
         # model check
+        from crawling import models
         eval(f"models.{item['model']}")
         if link_len == 0:
             # empty check. 크롤링은 시도했으나 아무 데이터를 가져오지 못한 경우.
@@ -164,57 +165,17 @@ class DefaultSpider(scrapy.Spider):
         self.scraped_info_data.append(scraped_info)
 
     def extend_list(self, arr: List[str], target: int) -> List[str]:
-        add = [None for i in range(target)]
+        add = [None for _ in range(target)]
         return arr + add
 
     # Override
-    def parse(self, response):
+    def parse(self, response: Response):
         if response.status == 404:
             raise Exception('404 Page not foud! Check the base url.')
 
-        base_url = get_base_url(response)
-        row_datas = response.xpath(self.row_xpath)
-        links = []
-        titles = []
-        is_fixeds = []
-        dates = []
-        authors = []
-        references = []
+        response = self._preprocess_response(response)
 
-        for row in row_datas[self.drop_offset:]:
-            child_url = row.xpath(self.child_url_xpath + '/@href')
-            if child_url:
-                links.append(urljoin(base_url, child_url.get()))
-                try:
-                    s_list = row.xpath(self.title_xpath).getall()
-                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
-                    titles.append(s if s else '')
-                except:
-                    titles.append('')
-                try:
-                    s_list = row.xpath(self.fixed_xpath).getall()
-                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
-                    is_fixeds.append(s if s else False)
-                except:
-                    is_fixeds.append(False)
-                try:
-                    s_list = row.xpath(self.date_xpath).getall()
-                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
-                    dates.append(s)
-                except:
-                    dates.append(None)
-                try:
-                    s_list = row.xpath(self.author_xpath).getall()
-                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
-                    authors.append(s)
-                except:
-                    authors.append(None)
-                try:
-                    s_list = row.xpath(self.reference_xpath).getall()
-                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
-                    references.append(s)
-                except:
-                    references.append(None)
+        authors, dates, is_fixeds, links, references, titles = self._parse_outside(response)
 
         bids, links = self.split_id_and_link(links)  # bid, link 추출
         titles = self.remove_whitespace(titles)
@@ -262,6 +223,57 @@ class DefaultSpider(scrapy.Spider):
             # yield scraped_info
         # print(f"Success! {self.name}")
 
+    def _parse_outside(self, response: Response):
+        base_url = get_base_url(response)
+        row_datas = response.xpath(self.row_xpath)
+        links = []
+        titles = []
+        is_fixeds = []
+        dates = []
+        authors = []
+        references = []
+        for row in row_datas[self.drop_offset:]:
+            child_url = row.xpath(self.child_url_xpath + '/@href')
+            if child_url:
+                links.append(self._build_link(base_url, child_url))
+                try:
+                    s_list = row.xpath(self.title_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
+                    titles.append(s if s else '')
+                except:
+                    titles.append('')
+                try:
+                    s_list = row.xpath(self.fixed_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
+                    is_fixeds.append(s if s else False)
+                except:
+                    is_fixeds.append(False)
+                try:
+                    s_list = row.xpath(self.date_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
+                    dates.append(s)
+                except:
+                    dates.append(None)
+                try:
+                    s_list = row.xpath(self.author_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
+                    authors.append(s)
+                except:
+                    authors.append(None)
+                try:
+                    s_list = row.xpath(self.reference_xpath).getall()
+                    s = ' '.join([t.strip() for t in s_list if t.strip() != ''])
+                    references.append(s)
+                except:
+                    references.append(None)
+        return authors, dates, is_fixeds, links, references, titles
+
+    def _build_link(self, base_url, child_url):
+        return urljoin(base_url, child_url.get())
+
+    def _preprocess_response(self, response):
+        return response
+
     # Override
     def close(self, spider, reason):
         # for info in self.scraped_info_data:
@@ -308,6 +320,7 @@ class {key.capitalize()}Spider(DefaultSpider):
         self.scraped_info_data = []
         super().__init__(**kwargs)
         super().set_args(args)
+    
 """
         exec(compile(txt, "<string>", "exec"))
 
@@ -318,19 +331,36 @@ class KnudormSpider(DefaultSpider):
         logger = logging.getLogger('scrapy')
         args = data['knudorm']
         self.name = args['name']
-        self.start_urls = [args['start_url']]
+        self.start_urls = [args['start_url'] for _ in range(page_num)]
         self.output_callback = kwargs.get('args').get('callback')
         self.scraped_info_data = []
         super().__init__(**kwargs)
         super().set_args(args)
 
     # Override
-    # Link 객체에서 url과 bid 추출
-    def split_id_and_link(self, links: List[str]) -> Tuple[List[str], List[str]]:
-        ids = []
-        urls = []
-        for link in links:
-            bid = ''.join(filter(str.isdigit, link))
-            ids.append(f'{self.name}-{bid}')
-            urls.append(f'https://knudorm.kangwon.ac.kr/dorm/bbs/bbsView.knu?newPopup=true&articleId={bid}')
-        return ids, urls
+    def start_requests(self):
+        if not self.start_urls and hasattr(self, 'start_url'):
+            raise AttributeError(
+                "Crawling could not start: 'start_urls' not found "
+                "or empty (but found 'start_url' attribute instead, "
+                "did you miss an 's'?)")
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+        }
+        for i in range(1, page_num + 1):
+            body = 'boardId=4&userListRowCnt=10&pagedListSearchCondition={"pageSize":"10","currentPage":"%s","pageLimit":"10","searchKeys":["subject","summary","user_name"],"method":"S","searchInResult":"N","searchParams":[{"key":"subject","column":"SUBJECT","type":"string","operator":"like"},{"key":"summary","column":"CONTENT_SUMMARY","type":"string","operator":"like"},{"key":"user_name","column":"A.USER_NAME","type":"string","operator":"like"},{"key":"nick_name","column":"NICK_NAME","type":"string","operator":"like"},{"key":"write_date","column":"WRITE_DATE","type":"date","operator":"between"},{"key":"branchName","column":"BRANCH_NAME","type":"string","operator":"like"},{"key":"apprStatus","column":"APP_STATUS","type":"string","operator":"eq"},{"key":"user_dept_name","column":"USER_DEPT_NAME","type":"string","operator":"like"}],"orders":[{"field":"ARTICLE_SEQ+DESC,+ORDER_GROUP","order":""}],"link":"goPage","headerSortYn":"N","headerSortField":"","headerSortOrderBy":"","scrollPaging":"N","startOffset":"0","endOffset":"0"}' \
+                   % i
+            yield Request(self.start_urls[0], method='POST', headers=headers, body=body)
+
+    # Override
+    def _build_link(self, base_url, child_url):
+        return 'https://knudorm.kangwon.ac.kr/dorm/bbs/bbsView.knu?newPopup=true&boardMode=COMPANY&articleId=' + child_url.get().split('\'')[1]
+
+    # Override
+    def _preprocess_response(self, response: Response):
+        text = response.text
+        text = text.replace('<![CDATA[', '')
+        text = text.replace(']]>', '')
+        response = response.replace(body=bytes(text, 'utf-8'))
+
+        return response

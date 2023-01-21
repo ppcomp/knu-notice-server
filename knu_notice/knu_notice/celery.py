@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 import logging
+import os
+
 from celery import Celery
 from celery.schedules import crontab, timedelta
 from celery.signals import setup_logging
@@ -34,3 +36,8 @@ def config_loggers(*args, **kwags):
     logger = logging.getLogger('celery')
 
 app.autodiscover_tasks()
+
+if os.environ.get('PROFILE') == 'dev':
+    from celery import current_app
+    current_app.conf.task_always_eager = True
+    current_app.conf.task_eager_propagates = True
