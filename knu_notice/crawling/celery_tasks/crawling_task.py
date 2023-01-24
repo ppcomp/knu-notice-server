@@ -6,8 +6,6 @@ from firebase_admin import messaging
 from rest_framework import status
 
 from knu_notice.celery import app
-from .spiders import spiders
-from .single_crawling_task import single_crawling_task
 
 
 @app.task
@@ -18,6 +16,8 @@ def crawling_task(page_num, spider_idx=-1, is_alarm=True, cron=False):
         fixed_notices = models.Notice.objects.all().filter(is_fixed=True)
         fixed_notices.update(is_fixed=False)
 
+    from .spiders import spiders
+    from .single_crawling_task import single_crawling_task
     # res = []
     result_dic = dict()
     if spider_idx == -1:

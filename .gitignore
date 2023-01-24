@@ -12,6 +12,7 @@ postgres-passwd
 postgres-passwd.txt
 firebase-adminsdk.json
 .db_data/
+log/
 
 ### Django ###
 *.log

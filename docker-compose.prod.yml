@@ -21,8 +21,10 @@ services:
         command: bash -c "
             python manage_prod.py collectstatic --no-input &&
             python manage_prod.py makemigrations && 
-            python manage_prod.py migrate &&
-            gunicorn knu_notice.prod.wsgi -b 0:8080 --reload"
+            python manage_prod.py migrate --fake &&
+            gunicorn knu_notice.prod.wsgi -b 0:8080"
+        environment:
+            PROFILE: prod
         volumes:
             - ./knu_notice:/home/knu_notice
         links:

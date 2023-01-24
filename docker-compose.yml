@@ -21,15 +21,12 @@ services:
         command: bash -c "
             python manage_dev.py collectstatic --no-input &&
             python manage_dev.py makemigrations && 
-            python manage_dev.py migrate &&
+            python manage_dev.py migrate --fake &&
             gunicorn knu_notice.dev.wsgi -b 0:8080 --reload"
         volumes:
             - ./knu_notice:/home/knu_notice
-        links:
-            - redis
-            - celery
-            - celery-beat
-            - nginx
+        environment:
+            PROFILE: dev
 
     celery:
         restart: always
