@@ -62,7 +62,7 @@ spiders = [
     crawl_spider.SociologySpider,
     crawl_spider.MasscomSpider,
     crawl_spider.PoliticsSpider,
-    # crawl_spider.PadmSpider,          # memory explosion.
+    crawl_spider.PadmSpider,
     crawl_spider.PsychSpider,
     crawl_spider.ForestSpider,
     crawl_spider.FmSpider,
