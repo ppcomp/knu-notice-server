@@ -12,6 +12,6 @@ psycopg2==2.8.5
 pytest-django==3.8.0
 pytest-xdist==1.32.0
 pytz==2019.3
-redis==3.4.1
+redis==4.4.4
 scrapy==2.6.3
 sqlparse==0.3.1
