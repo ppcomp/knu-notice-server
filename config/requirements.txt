@@ -13,5 +13,5 @@ pytest-django==3.8.0
 pytest-xdist==1.32.0
 pytz==2019.3
 redis==3.4.1
-scrapy==2.6.3
+scrapy==2.11.2
 sqlparse==0.3.1
